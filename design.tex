@@ -3,7 +3,7 @@
 \usepackage{listings}
 
 \title{FP game design Waizy Giesberts}
-\author{Masheed Waizy \\ Kevin Giesberts, 7254970}
+\author{Masheed Waizy, 0384739\\ Kevin Giesberts, 7254970}
 \date{October 2026}
 
 \begin{document}
@@ -21,10 +21,12 @@ The full state of our game is represented using a Game State data type:
 \begin{verbatim}
 data GameState = GameState { ship :: Ship
                            , asteroids :: [Asteroid]
+                           ufo :: [UFO]
                            , score :: Int
                            , lives :: Int
-                           , Alive :: Bool
-                           , bullets [Bullet]
+                           , alive :: Bool
+                           , bullets :: [Bullet]
+                           , animation :: [Particles]
                            }
 \end{verbatim}
 The player will always be human.
@@ -49,13 +51,18 @@ Arrow-keys for moving. Up for thrust. Left arrow to turn left and right arrow to
 \subsection{}
 \subsection{Interface}
 \section{Implementation of the Minimum Requirements}
+\subsection{Player}
+The player controls the spaceship using the arrow keys. 
+
 Player. The player controls (at least) one character, using the keyboard.
 Enemies. The game has antagonistic characters in some sense, which try to make you lose the game.
 You should implement a minimal “intelligence” for those enemies.
 
-\subsection{}
-Randomness. The game has to include random components: the place where new enemies appear,
-the place where bonus are located, and things like that.
+\subsection{Randomness}
+\begin{itemize}
+    \item Enemies appear on random places
+    \item Enemies have a random speed, and target location
+\end{itemize}
 
 \subsection{Animation}
 \subsubsection{Menu}
