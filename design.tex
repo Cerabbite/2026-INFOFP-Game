@@ -1,0 +1,89 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{listings}
+
+\title{FP game design Waizy Giesberts}
+\author{Masheed Waizy \\ Kevin Giesberts, 7254970}
+\date{October 2026}
+
+\begin{document}
+
+\maketitle
+
+
+
+\section{Introduction and Rules}
+This document describes the implementation of the game, Asteroids. Asteroids is a real-time single-player arcade shooter, played in a two-dimensional wrap-around space environment. The player controls a spaceship that can rotate and thrust forward, firing projectiles to break apart moving asteroids and UFOs. The game ends when the player loses all three lives by colliding with an asteroid or an enemy flying saucer.
+\section{Design}
+\subsection{Data structures}
+\subsubsection{The Game State}
+The full state of our game is represented using a Game State data type:
+\begin{verbatim}
+data GameState = GameState { ship :: Ship
+                           , asteroids :: [Asteroid]
+                           , score :: Int
+                           , lives :: Int
+                           , Alive :: Bool
+                           , bullets [Bullet]
+                           }
+\end{verbatim}
+The player will always be human.
+\subsubsection{The player and the field}
+The player, projectiles, and asteroids exist in a flat space. Positions and velocities will be represented by 2D vectors (tuples of floats):
+\begin{verbatim}
+type Vector = (Float, Float)
+data Ship = Ship { position :: Vector, velocity :: Vector, heading :: Float }
+data AsteroidSize = Large | Medium | Small
+data Asteroid = Asteroid { astPos :: Vector, 
+                           astVel :: Vector, 
+                           size :: AsteroidSize }
+data Bullet = Bullet
+{ bulletPos  :: Vector
+, bulletVel  :: Vector
+, bulletLifeTime :: Float       
+} deriving (Show)
+\end{verbatim}
+The board configuration is a continuous coordinate system that wraps around the edges of the screen. If the player goes out of bounds, then he should respawn at the other side of the screen with the same velocity and direction. 
+\subsubsection{Movement}
+Arrow-keys for moving. Up for thrust. Left arrow to turn left and right arrow to turn right. Even after you apply thrust you keep moving. If the player goes out of bounds, then the spaceship should be spawned on the other side of the screen, but with the same momentum. The spaceship should shoot with space, in the direction that it is facing.
+\subsection{}
+\subsection{Interface}
+\section{Implementation of the Minimum Requirements}
+Player. The player controls (at least) one character, using the keyboard.
+Enemies. The game has antagonistic characters in some sense, which try to make you lose the game.
+You should implement a minimal “intelligence” for those enemies.
+
+\subsection{}
+Randomness. The game has to include random components: the place where new enemies appear,
+the place where bonus are located, and things like that.
+
+\subsection{Animation}
+\subsubsection{Menu}
+\begin{itemize}
+    \item Hovering on a button will show a hover animation.
+\end{itemize}
+
+\subsubsection{In Game}
+\begin{itemize}
+    \item When the player applies thrust a fire animation plays behind the space ship.
+    \item When the player destroys an enemy a destruction animation will play.
+    \item When the player dies an animation plays where he himself gets destroyed, after which a transition animation plays to the menu with the score of the game.
+\end{itemize}
+
+\subsection{Pause}
+The player can pause the game by pressing P. They then see a pause menu from which they can either continue the game, restart the game, exit to main menu, or exit to desktop.
+
+\subsection{Interaction with the file system}
+The game score of every game is stored in a JSON file on the players computer. The key is the Unix timestamp of when the game was started and the value is the score of the game.
+
+\begin{lstlisting}
+{
+    "1791895993": "440"
+}
+\end{lstlisting}
+
+On the highscore page you can see all your scores and when you reached them.
+
+\section{Implementation of the optional Requirements}
+We have no plans to implement any of the optional requirements. This is subject to change in the future.
+\end{document}
