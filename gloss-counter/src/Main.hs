@@ -3,6 +3,12 @@ module Main where
 import Controller
 import Model
 import View
+import Player
+import Asteroids
+import Classes 
+import Constants
+import UFO
+import Highscore
 
 import Graphics.Gloss.Interface.IO.Game
 
