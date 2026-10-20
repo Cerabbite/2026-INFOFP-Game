@@ -2,17 +2,51 @@
 --   which represent the state of the game
 module Model where
 
-data InfoToShow = ShowNothing
-                | ShowANumber Int
-                | ShowAChar   Char
+import System.Random (StdGen)
 
-nO_SECS_BETWEEN_CYCLES :: Float
-nO_SECS_BETWEEN_CYCLES = 1
+type Vector = (Float, Float)
 
-data GameState = GameState {
-                   infoToShow  :: InfoToShow
-                 , elapsedTime :: Float
-                 }
+data Screen = Menu | Playing | Paused | GameOver | HighScores
+  deriving (Eq, Show)
 
-initialState :: GameState
-initialState = GameState ShowNothing 0
+data TurnDir = TurnLeft | TurnRight | NoTurn
+  deriving (Eq, Show)
+
+data Ship = Ship 
+  { shipPos      :: Vector
+  ,  shipVel      :: Vector
+  ,  shipDir      :: Float
+  ,  shotCooldown :: Float
+  ,  lives        :: Int
+  ,  invulnerable :: Float
+  ,  isThrust     :: Bool
+  ,  turnDir      :: TurnDir
+  }
+
+data GameState = GameState
+  { screen      :: Screen
+  , ship        :: Ship
+  , elapsedTime :: Float
+  , rng         :: StdGen
+  }
+
+initialShip :: Ship
+initialShip = Ship
+  { shipPos       = (0, 0)
+  , shipVel       = (0, 0)
+  , shipDir       = 0
+  , shotCooldown  = 0
+  , lives         = 3
+  , invulnerable  = 0
+  , isThrust      = False
+  , turnDir       = NoTurn
+
+  }
+
+initial :: StdGen -> GameState
+initial gen = GameState
+  { screen      = Playing   -- later: Menu
+  , ship        = initialShip
+  , elapsedTime = 0
+  , rng         = gen
+  }
