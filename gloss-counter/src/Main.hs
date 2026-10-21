@@ -11,12 +11,15 @@ import UFO
 import Highscore
 
 import Graphics.Gloss.Interface.IO.Game
+import System.Random (newStdGen)   -- swap for mkStdGen 42 while debugging
 
 main :: IO ()
-main = playIO (InWindow "Counter" (400, 400) (0, 0)) -- Or FullScreen
-              black            -- Background color
-              10               -- Frames per second
-              initialState     -- Initial state
-              view             -- View function
-              input            -- Event function
-              step             -- Step function
+main = do
+  gen <- newStdGen
+  playIO (InWindow "Asteroids" (windowWidth, windowHeight) (0, 0))
+         black
+         fps
+         (initial gen)
+         view
+         input
+         step

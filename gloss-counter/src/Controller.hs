@@ -1,31 +1,32 @@
--- | This module defines how the state changes
---   in response to time and user input
 module Controller where
 
 import Model
-
-import Graphics.Gloss
+import Player
 import Graphics.Gloss.Interface.IO.Game
-import System.Random
 
--- | Handle one iteration of the game
 step :: Float -> GameState -> IO GameState
-step secs gstate
-  | elapsedTime gstate + secs > nO_SECS_BETWEEN_CYCLES
-  = -- We show a new random number
-    do randomNumber <- randomIO
-       let newNumber = abs randomNumber `mod` 10
-       return $ GameState (ShowANumber newNumber) 0
-  | otherwise
-  = -- Just update the elapsed time
-    return $ gstate { elapsedTime = elapsedTime gstate + secs }
+step dt = return . stepPure dt
 
--- | Handle user input
+stepPure :: Float -> GameState -> GameState
+stepPure dt gstate = case screen gstate of
+  Playing -> gstate { ship        = updateShip dt (ship gstate)
+                    , elapsedTime = elapsedTime gstate + dt }
+  _       -> gstate
+
 input :: Event -> GameState -> IO GameState
-input e gstate = return (inputKey e gstate)
+input e = return . inputPure e
 
-inputKey :: Event -> GameState -> GameState
-inputKey (EventKey (Char c) _ _ _) gstate
-  = -- If the user presses a character key, show that one
-    gstate { infoToShow = ShowAChar c }
-inputKey _ gstate = gstate -- Otherwise keep the same
+inputPure :: Event -> GameState -> GameState
+inputPure (EventKey key keyState _ _) gstate =
+  gstate { ship = handleKey key keyState (ship gstate) }
+inputPure _ gstate = gstate
+
+handleKey :: Key -> KeyState -> Ship -> Ship
+handleKey (SpecialKey KeyUp)    Down s = s { isThrust = True }
+handleKey (SpecialKey KeyUp)    Up   s = s { isThrust = False }
+handleKey (SpecialKey KeyLeft)  Down s = s { turnDir = TurnLeft }
+handleKey (SpecialKey KeyRight) Down s = s { turnDir = TurnRight }
+-- only stop turning if the released key is the one we are turning with
+handleKey (SpecialKey KeyLeft)  Up   s | turnDir s == TurnLeft  = s { turnDir = NoTurn }
+handleKey (SpecialKey KeyRight) Up   s | turnDir s == TurnRight = s { turnDir = NoTurn }
+handleKey _ _ s = s
