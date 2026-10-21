@@ -26,7 +26,6 @@ handleKey (SpecialKey KeyUp)    Down s = s { isThrust = True }
 handleKey (SpecialKey KeyUp)    Up   s = s { isThrust = False }
 handleKey (SpecialKey KeyLeft)  Down s = s { turnDir = TurnLeft }
 handleKey (SpecialKey KeyRight) Down s = s { turnDir = TurnRight }
--- only stop turning if the released key is the one we are turning with
 handleKey (SpecialKey KeyLeft)  Up   s | turnDir s == TurnLeft  = s { turnDir = NoTurn }
 handleKey (SpecialKey KeyRight) Up   s | turnDir s == TurnRight = s { turnDir = NoTurn }
 handleKey _ _ s = s
