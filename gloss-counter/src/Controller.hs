@@ -4,6 +4,21 @@ import Model
 import Graphics.Gloss
 import Graphics.Gloss.Interface.IO.Game
 
+isThrustKey :: Key -> Bool
+isThrustKey (SpecialKey KeyUp) = True
+isThrustKey (Char 'w') = True
+isThrustKey _ = False
+
+isLeftKey :: Key -> Bool
+isLeftKey (SpecialKey KeyLeft) = True
+isLeftKey (Char 'a') = True
+isLeftKey _ = False
+
+isRightKey :: Key -> Bool
+isRightKey (SpecialKey KeyRight) = True
+isRightKey (Char 'd') = True
+isRightKey _ = False
+
 inputPure :: Event -> GameState -> GameState
 
 -- Manage Screens
@@ -21,35 +36,17 @@ inputPure (EventKey (Char 'b') Down _ _) gstate = case screen gstate of
   Paused  -> gstate { screen = Menu }
   _       -> gstate
 
--- Manage Movement Input Arrows
-inputPure (EventKey (SpecialKey KeyUp) Down _ _) gstate =
-  let s = ship gstate in gstate { ship = s { isThrusting = True } }
-inputPure (EventKey (SpecialKey KeyLeft) Down _ _) gstate =
-  let s = ship gstate in gstate { ship = s { turnDir = TurnLeft } }
-inputPure (EventKey (SpecialKey KeyRight) Down _ _) gstate =
-  let s = ship gstate in gstate { ship = s { turnDir = TurnRight } }
+-- Manage Movement Input
+inputPure (EventKey k Down _ _) gstate
+  | isThrustKey k = let s = ship gstate in gstate { ship = s { isThrusting = True } }
+  | isLeftKey k   = let s = ship gstate in gstate { ship = s { turnDir = TurnLeft } }
+  | isRightKey k  = let s = ship gstate in gstate { ship = s { turnDir = TurnRight } }
 
-inputPure (EventKey (SpecialKey KeyUp) Up _ _) gstate =
-  let s = ship gstate in gstate { ship = s { isThrusting = False } }
-inputPure (EventKey (SpecialKey KeyLeft) Up _ _) gstate =
-  let s = ship gstate in gstate { ship = s { turnDir = NoTurn } }
-inputPure (EventKey (SpecialKey KeyRight) Up _ _) gstate =
-  let s = ship gstate in gstate { ship = s { turnDir = NoTurn } }
+inputPure (EventKey k Up _ _) gstate
+  | isThrustKey k = let s = ship gstate in gstate { ship = s { isThrusting = False } }
+  | isLeftKey k   = let s = ship gstate in gstate { ship = s { turnDir = NoTurn } }
+  | isRightKey k  = let s = ship gstate in gstate { ship = s { turnDir = NoTurn } }
 
--- Manage Movement Input WASD
-inputPure (EventKey (Char 'w') Down _ _) gstate =
-  let s = ship gstate in gstate { ship = s { isThrusting = True } }
-inputPure (EventKey (Char 'a') Down _ _) gstate =
-  let s = ship gstate in gstate { ship = s { turnDir = TurnLeft } }
-inputPure (EventKey (Char 'd') Down _ _) gstate =
-  let s = ship gstate in gstate { ship = s { turnDir = TurnRight } }
-
-inputPure (EventKey (Char 'w') Up _ _) gstate =
-  let s = ship gstate in gstate { ship = s { isThrusting = False } }
-inputPure (EventKey (Char 'a') Up _ _) gstate =
-  let s = ship gstate in gstate { ship = s { turnDir = NoTurn } }
-inputPure (EventKey (Char 'd') Up _ _) gstate =
-  let s = ship gstate in gstate { ship = s { turnDir = NoTurn } }
 
 inputPure _ gstate = gstate
 
