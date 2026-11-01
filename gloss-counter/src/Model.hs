@@ -2,17 +2,13 @@
 --   which represent the state of the game
 module Model where
 
-data InfoToShow = ShowNothing
-                | ShowANumber Int
-                | ShowAChar   Char
-
-nO_SECS_BETWEEN_CYCLES :: Float
-nO_SECS_BETWEEN_CYCLES = 5
+data Screen = Menu | Game | Paused
+  deriving(Eq, Show)
 
 data GameState = GameState {
-                   infoToShow  :: InfoToShow
+                  screen  :: Screen
                  , elapsedTime :: Float
-                 }
+                 } deriving(Show)
 
 initialState :: GameState
-initialState = GameState ShowNothing 0
+initialState = GameState Menu 0
