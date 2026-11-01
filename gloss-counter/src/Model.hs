@@ -11,4 +11,4 @@ data GameState = GameState {
                  } deriving(Show)
 
 initialState :: GameState
-initialState = GameState Paused 0
+initialState = GameState Menu 0
