@@ -2,7 +2,7 @@
 --   which represent the state of the game
 module Model where
 
-data Screen = Menu | Game | Paused
+data Screen = Menu | Playing | Paused | GameOver | HighScores
   deriving(Eq, Show)
 
 data GameState = GameState {

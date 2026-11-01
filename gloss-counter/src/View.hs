@@ -20,5 +20,6 @@ drawPaused = color white $ Pictures [translate (-100) 50  $ scale 0.3 0.3 $ text
 viewPure :: GameState -> Picture
 viewPure gstate = case screen gstate of
   Menu   -> drawMenu
-  Game -> drawGame
+  Playing -> drawGame
   Paused  -> drawPaused
+  _ -> blank
