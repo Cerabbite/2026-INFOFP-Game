@@ -38,8 +38,8 @@ inputPure (EventKey (Char 'b') Down _ _) gstate = case screen gstate of
 
 inputPure (EventKey k Down _ _) gstate
   | isThrustKey k = let s = ship gstate in gstate { ship = s { isThrusting = True } }
-  | isLeftKey k   = let s = ship gstate in gstate { ship = s { turnDir = TurnLeft } }
-  | isRightKey k  = let s = ship gstate in gstate { ship = s { turnDir = TurnRight } }
+  | isLeftKey k   = let s = ship gstate in gstate { ship = s { turnDir = TurnRight } }
+  | isRightKey k  = let s = ship gstate in gstate { ship = s { turnDir = TurnLeft } }
 
 inputPure (EventKey k Up _ _) gstate
   | isThrustKey k = let s = ship gstate in gstate { ship = s { isThrusting = False } }
