@@ -23,7 +23,7 @@ drawShip s =
 drawBullet :: Bullet -> Picture
 drawBullet b =
   let (x,y) = bulletPos b
-  in translate x y $ color white $ circleSolid 2.5
+  in translate x y $ color yellow $ circleSolid 2.5
 
 drawAsteroid :: Asteroid -> Picture
 drawAsteroid ast =
@@ -37,9 +37,13 @@ drawAsteroid ast =
 drawPaused :: Picture
 drawPaused = color white $ Pictures [translate (-100) 50  $ scale 0.3 0.3 $ text "PAUSED", translate (-180) (-25)  $ scale 0.15 0.15 $ text "Press `P` to Resume Playing", translate (-180) (-75)  $ scale 0.15 0.15 $ text "Press `B` to Go To Main Menu"]
 
+drawGameOver :: Picture
+drawGameOver = color red $ Pictures [translate (-100) 50  $ scale 0.3 0.3 $ text "GAME OVER"]
+
 viewPure :: GameState -> Picture
 viewPure gstate = case screen gstate of
-  Menu   -> drawMenu
-  Playing -> drawGame gstate
-  Paused  -> drawPaused
+  Menu     -> drawMenu
+  Playing  -> drawGame gstate
+  Paused   -> drawPaused
+  GameOver -> drawGameOver
   _ -> blank

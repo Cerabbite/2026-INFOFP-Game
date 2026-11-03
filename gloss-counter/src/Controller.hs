@@ -77,11 +77,11 @@ resolveCollisions gs =
   let playerBullets = [ b | b <- bullets gs, bulletOwner b == PlayerBullet ]
       otherBullets  = [ b | b <- bullets gs, bulletOwner b /= PlayerBullet ]
 
-      -- which asteroids were shot / which bullets hit something
+      -- which asteroids were shot and which bullets hit something
       (shot, intact) = partition (\a -> any (`bulletHitsAsteroid` a) playerBullets) (asteroids gs)
       spentBullets   = [ b | b <- playerBullets, not (any (bulletHitsAsteroid b) (asteroids gs)) ]
 
-      -- split shot asteroids, threading the random generator through
+      -- split shot asteroids, threading random gen
       (fragments, rng') = foldr
         (\a (acc, g) -> let (new, g') = splitAsteroid g a in (new ++ acc, g'))
         ([], rng gs) shot
