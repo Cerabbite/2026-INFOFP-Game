@@ -2,6 +2,8 @@
 --   which represent the state of the game
 module Model where
 
+import System.Random (StdGen, randomR)
+
 screenRadius :: Float
 screenRadius = 300 
 
@@ -47,6 +49,21 @@ data Bullet = Bullet
   , bulletOwner :: BulletOwner
   } deriving ( Show )
 
+data AsteroidSize = Large | Medium | Small
+  deriving ( Eq , Show )
+
+data Asteroid = Asteroid
+  { astPos :: Vector
+  , astVel :: Vector
+  , astSize :: AsteroidSize
+  } deriving ( Show )
+
+data Explosion = Explosion
+  { expPos :: Vector
+  , expScale :: Float
+  , expTimeLeft :: Float
+  } deriving ( Show )
+
 initialShip :: Ship
 initialShip = Ship
   { shipPos = (0, 0)
@@ -63,10 +80,23 @@ data GameState = GameState {
                  , elapsedTime :: Float
                  , ship :: Ship
                  , bullets :: [Bullet]
+                 , asteroids   :: [Asteroid]
+                 , explosions  :: [Explosion]
+                 , rng         :: StdGen
                  } deriving(Show)
 
-initialState :: GameState
-initialState = GameState Menu 0 initialShip []
+initialState :: StdGen -> GameState
+initialState initialRng = 
+  let (asts, newRng) = generateAsteroids 5 initialRng
+  in GameState 
+       { screen      = Menu 
+       , elapsedTime = 0 
+       , ship        = initialShip 
+       , bullets     = []
+       , asteroids   = asts
+       , explosions  = []
+       , rng         = newRng
+       }
 
 applyTurn :: Ship -> Float -> Ship
 applyTurn s dt = case turnDir s of
@@ -122,10 +152,23 @@ moveBullet :: Bullet -> Float -> Bullet
 moveBullet b dt =
   let (x, y)   = bulletPos b
       (vx, vy) = bulletVel b
-      newPos   = (x + vx * dt, y + vy * dt)
+      newPos   = wrap (x + vx * dt, y + vy * dt)
       newLife  = bulletLifeTime b - dt
   in b { bulletPos = newPos, bulletLifeTime = newLife }
 
 updateBullets :: [Bullet] -> Float -> [Bullet]
 updateBullets bs dt =
   [ moveBullet b dt | b <- bs, bulletLifeTime b - dt > 0 ]
+
+generateAsteroids :: Int -> StdGen -> ([Asteroid], StdGen)
+generateAsteroids 0 gen = ([], gen)
+generateAsteroids n gen =
+  let (x, gen1) = randomR (-250.0, 250.0) gen
+      (y, gen2) = randomR (-250.0, 250.0) gen1
+      ast       = Asteroid { astPos = (x, y), astVel = (0, 0), astSize = Large }
+      (rest, finalGen) = generateAsteroids (n - 1) gen2
+  in (ast : rest, finalGen)
+
+updateExplosions :: [Explosion] -> Float -> [Explosion]
+updateExplosions exps dt =
+  [ e { expTimeLeft = expTimeLeft e - dt } | e <- exps, expTimeLeft e - dt > 0 ]
