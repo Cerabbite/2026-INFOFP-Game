@@ -18,7 +18,7 @@ drawShip :: Ship -> Picture
 drawShip s = 
   let (x, y) = shipPos s
       shipShape = lineLoop [ (-10, -10), (0, 15), (10, -10) ]
-  in translate x y $ rotate (heading s) $ color white shipShape
+  in translate x y $ rotate (heading s) $ color red shipShape
 
 drawBullet :: Bullet -> Picture
 drawBullet b =

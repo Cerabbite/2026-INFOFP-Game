@@ -172,3 +172,56 @@ generateAsteroids n gen =
 updateExplosions :: [Explosion] -> Float -> [Explosion]
 updateExplosions exps dt =
   [ e { expTimeLeft = expTimeLeft e - dt } | e <- exps, expTimeLeft e - dt > 0 ]
+
+asteroidRadius :: AsteroidSize -> Float
+asteroidRadius Large  = 30
+asteroidRadius Medium = 20
+asteroidRadius Small  = 10
+
+shipRadius, bulletRadius :: Float
+shipRadius   = 10
+bulletRadius = 2.5
+
+-- kortste afstand met wraparound
+wrapDelta :: Float -> Float
+wrapDelta d
+  | d >  screenRadius = d - 2 * screenRadius
+  | d < -screenRadius = d + 2 * screenRadius
+  | otherwise         = d
+
+-- Circle vs circle (squared distance, no sqrt)
+circlesOverlap :: (Vector, Float) -> (Vector, Float) -> Bool
+circlesOverlap ((x1, y1), r1) ((x2, y2), r2) =
+  let dx = wrapDelta (x2 - x1)
+      dy = wrapDelta (y2 - y1)
+  in dx * dx + dy * dy <= (r1 + r2) * (r1 + r2)
+
+bulletHitsAsteroid :: Bullet -> Asteroid -> Bool
+bulletHitsAsteroid b a =
+  circlesOverlap (bulletPos b, bulletRadius) (astPos a, asteroidRadius (astSize a))
+
+shipHitsAsteroid :: Ship -> Asteroid -> Bool
+shipHitsAsteroid s a =
+  circlesOverlap (shipPos s, shipRadius) (astPos a, asteroidRadius (astSize a))
+
+moveAsteroid :: Float -> Asteroid -> Asteroid
+moveAsteroid dt a =  
+  let (x, y)   = astPos a
+      (vx, vy) = astVel a
+  in a { astPos = wrap (x + vx * dt, y + vy * dt) }
+
+smaller :: AsteroidSize -> Maybe AsteroidSize
+smaller Large  = Just Medium
+smaller Medium = Just Small
+smaller Small  = Nothing
+
+--asteroid halveert, als asteroid kleinst is dan verdwijnt die
+splitAsteroid :: StdGen -> Asteroid -> ([Asteroid], StdGen)
+splitAsteroid g a = case smaller (astSize a) of
+  Nothing -> ([], g)
+  Just sz ->
+    let (ang, g1) = randomR (0, 2 * pi) g
+        (spd, g2) = randomR (30, 80) g1
+        v@(vx, vy) = (cos ang * spd, sin ang * spd)
+        mk vel = a { astSize = sz, astVel = vel }
+    in ([mk v, mk (-vx, -vy)], g2)

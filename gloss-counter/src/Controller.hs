@@ -3,6 +3,7 @@ module Controller where
 import Model
 import Graphics.Gloss
 import Graphics.Gloss.Interface.IO.Game
+import Data.List (partition)
 
 isThrustKey :: Key -> Bool
 isThrustKey (SpecialKey KeyUp) = True
@@ -55,10 +56,42 @@ input e gstate = return (inputPure e gstate)
 stepPure :: Float -> GameState -> GameState
 stepPure dt gstate = case screen gstate of
   Playing ->
-    let updatedShip = moveShip (applyDrag (applyThrust (applyTurn (ship gstate) dt) dt) dt) dt
+    let s0 = moveShip (applyDrag (applyThrust (applyTurn (ship gstate) dt) dt) dt) dt
+        updatedShip    = s0 { invulnTime = max 0 (invulnTime s0 - dt) }
         updatedBullets = updateBullets (bullets gstate) dt
-    in gstate { elapsedTime = elapsedTime gstate + dt, ship = updatedShip, bullets = updatedBullets }
+        moved = gstate
+          { elapsedTime = elapsedTime gstate + dt
+          , ship        = updatedShip
+          , bullets     = updatedBullets
+          , asteroids   = map (moveAsteroid dt) (asteroids gstate)
+          , explosions  = updateExplosions (explosions gstate) dt
+          }
+    in resolveCollisions moved
   _ -> gstate
 
 step :: Float -> GameState -> IO GameState
 step dt gstate = return (stepPure dt gstate)
+
+resolveCollisions :: GameState -> GameState
+resolveCollisions gs =
+  let playerBullets = [ b | b <- bullets gs, bulletOwner b == PlayerBullet ]
+      otherBullets  = [ b | b <- bullets gs, bulletOwner b /= PlayerBullet ]
+
+      -- which asteroids were shot / which bullets hit something
+      (shot, intact) = partition (\a -> any (`bulletHitsAsteroid` a) playerBullets) (asteroids gs)
+      spentBullets   = [ b | b <- playerBullets, not (any (bulletHitsAsteroid b) (asteroids gs)) ]
+
+      -- split shot asteroids, threading the random generator through
+      (fragments, rng') = foldr
+        (\a (acc, g) -> let (new, g') = splitAsteroid g a in (new ++ acc, g'))
+        ([], rng gs) shot
+
+      newExplosions = [ Explosion (astPos a) 1 0.5 | a <- shot ]
+
+      s = ship gs
+      shipDies = invulnTime s <= 0 && any (shipHitsAsteroid s) intact
+  in gs { bullets    = spentBullets ++ otherBullets
+        , asteroids  = intact ++ fragments
+        , explosions = newExplosions ++ explosions gs
+        , rng        = rng'
+        , screen     = if shipDies then GameOver else screen gs }
