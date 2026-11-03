@@ -189,7 +189,7 @@ wrapDelta d
   | d < -screenRadius = d + 2 * screenRadius
   | otherwise         = d
 
--- Circle vs circle (squared distance, no sqrt)
+-- squared distance, niet sqrt
 circlesOverlap :: (Vector, Float) -> (Vector, Float) -> Bool
 circlesOverlap ((x1, y1), r1) ((x2, y2), r2) =
   let dx = wrapDelta (x2 - x1)
