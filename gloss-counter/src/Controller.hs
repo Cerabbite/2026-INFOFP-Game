@@ -21,12 +21,12 @@ isRightKey _ = False
 
 inputPure :: Event -> GameState -> GameState
 
--- Manage Screens
 inputPure (EventKey (SpecialKey KeyEnter) Down _ _) gstate = case screen gstate of
   Menu -> gstate { screen = Playing }
   _       -> gstate
 inputPure (EventKey (SpecialKey KeySpace) Down _ _) gstate = case screen gstate of
   Menu -> gstate { screen = Playing }
+  Playing -> gstate { bullets = fireBullet (ship gstate) : bullets gstate }
   _       -> gstate
 inputPure (EventKey (Char 'p') Down _ _) gstate = case screen gstate of
   Playing -> gstate { screen = Paused }
@@ -36,7 +36,6 @@ inputPure (EventKey (Char 'b') Down _ _) gstate = case screen gstate of
   Paused  -> gstate { screen = Menu }
   _       -> gstate
 
--- Manage Movement Input
 inputPure (EventKey k Down _ _) gstate
   | isThrustKey k = let s = ship gstate in gstate { ship = s { isThrusting = True } }
   | isLeftKey k   = let s = ship gstate in gstate { ship = s { turnDir = TurnLeft } }
@@ -57,7 +56,8 @@ stepPure :: Float -> GameState -> GameState
 stepPure dt gstate = case screen gstate of
   Playing ->
     let updatedShip = moveShip (applyDrag (applyThrust (applyTurn (ship gstate) dt) dt) dt) dt
-    in gstate { elapsedTime = elapsedTime gstate + dt, ship = updatedShip }
+        updatedBullets = updateBullets (bullets gstate) dt
+    in gstate { elapsedTime = elapsedTime gstate + dt, ship = updatedShip, bullets = updatedBullets }
   _ -> gstate
 
 step :: Float -> GameState -> IO GameState

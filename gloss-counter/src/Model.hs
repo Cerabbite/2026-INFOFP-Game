@@ -14,6 +14,12 @@ thrustAccel = 250.0
 dragCoeff :: Float
 dragCoeff = 0.98
 
+bulletSpeed :: Float
+bulletSpeed = 400.0
+
+bulletLifetime :: Float
+bulletLifetime = 2.0
+
 data Screen = Menu | Playing | Paused | GameOver | HighScores
   deriving(Eq, Show)
 
@@ -31,6 +37,16 @@ data Ship = Ship
   , invulnTime :: Float
   } deriving ( Show )
 
+data BulletOwner = PlayerBullet | UFOBullet
+  deriving ( Eq , Show )
+
+data Bullet = Bullet
+  { bulletPos :: Vector
+  , bulletVel :: Vector
+  , bulletLifeTime :: Float
+  , bulletOwner :: BulletOwner
+  } deriving ( Show )
+
 initialShip :: Ship
 initialShip = Ship
   { shipPos = (0, 0)
@@ -46,10 +62,11 @@ data GameState = GameState {
                   screen  :: Screen
                  , elapsedTime :: Float
                  , ship :: Ship
+                 , bullets :: [Bullet]
                  } deriving(Show)
 
 initialState :: GameState
-initialState = GameState Menu 0 initialShip
+initialState = GameState Menu 0 initialShip []
 
 applyTurn :: Ship -> Float -> Ship
 applyTurn s dt = case turnDir s of
@@ -87,3 +104,28 @@ moveShip s dt =
       (vx, vy) = shipVel s
       newPos   = wrap (x + vx * dt, y + vy * dt)
   in s { shipPos = newPos }
+
+fireBullet :: Ship -> Bullet
+fireBullet s =
+  let (x, y) = shipPos s
+      rad    = heading s * (pi / 180.0)
+      vx = sin rad * bulletSpeed
+      vy = cos rad * bulletSpeed
+  in Bullet
+       { bulletPos      = (x, y)
+       , bulletVel      = (vx, vy)
+       , bulletLifeTime = bulletLifetime
+       , bulletOwner    = PlayerBullet
+       }
+
+moveBullet :: Bullet -> Float -> Bullet
+moveBullet b dt =
+  let (x, y)   = bulletPos b
+      (vx, vy) = bulletVel b
+      newPos   = (x + vx * dt, y + vy * dt)
+      newLife  = bulletLifeTime b - dt
+  in b { bulletPos = newPos, bulletLifeTime = newLife }
+
+updateBullets :: [Bullet] -> Float -> [Bullet]
+updateBullets bs dt =
+  [ moveBullet b dt | b <- bs, bulletLifeTime b - dt > 0 ]
