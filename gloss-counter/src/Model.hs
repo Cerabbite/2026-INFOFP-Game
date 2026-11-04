@@ -2,6 +2,13 @@
 --   which represent the state of the game
 module Model where
 
+-- TODO
+-- [ ] Make astroids move from start
+-- [ ] Score counting
+-- [ ] High score page
+-- [ ] Store scores to computer
+-- [ ] Add space ships
+
 import System.Random (StdGen, randomR)
 
 screenRadius :: Float
