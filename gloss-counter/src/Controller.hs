@@ -46,7 +46,7 @@ inputPure (EventKey k Up _ _) gstate
   | isThrustKey k = let s = ship gstate in gstate { ship = s { isThrusting = False } }
   | isLeftKey k   = let s = ship gstate in gstate { ship = s { turnDir = NoTurn } }
   | isRightKey k  = let s = ship gstate in gstate { ship = s { turnDir = NoTurn } }
-
+--HERE QUESTION TURN. ANSWER: GLoss registreet alleen een enkele down input. DUs zoek eits zoals een while down functie.
 
 inputPure _ gstate = gstate
 

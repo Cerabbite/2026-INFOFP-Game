@@ -160,6 +160,8 @@ updateBullets :: [Bullet] -> Float -> [Bullet]
 updateBullets bs dt =
   [ moveBullet b dt | b <- bs, bulletLifeTime b - dt > 0 ]
 
+--Magic numbers bij de asteroids. 
+--Altijd fullscreen, kan je via IO verwerken om te fixen
 generateAsteroids :: Int -> StdGen -> ([Asteroid], StdGen)
 generateAsteroids 0 gen = ([], gen)
 generateAsteroids n gen =
