@@ -35,6 +35,9 @@ bulletSpeed = 400.0
 bulletLifetime :: Float
 bulletLifetime = 2.0
 
+initialScore :: Int
+initialScore = 0
+
 data Screen = Menu | Playing | Paused | GameOver | HighScores
   deriving(Eq, Show)
 
@@ -89,14 +92,15 @@ initialShip = Ship
   }
 
 data GameState = GameState {
-                  screen  :: Screen
+                  screen       :: Screen
                  , elapsedTime :: Float
-                 , ship :: Ship
-                 , lives :: Int
-                 , bullets :: [Bullet]
+                 , ship        :: Ship
+                 , lives       :: Int
+                 , bullets     :: [Bullet]
                  , asteroids   :: [Asteroid]
                  , explosions  :: [Explosion]
                  , rng         :: StdGen
+                 , score       :: Int
                  } deriving(Show)
 
 initialState :: StdGen -> GameState
@@ -111,7 +115,13 @@ initialState initialRng =
        , asteroids   = asts
        , explosions  = []
        , rng         = newRng
+       , score       = initialScore
        }
+
+asteroidPoints :: AsteroidSize -> Int
+asteroidPoints Large  = 20
+asteroidPoints Medium = 50
+asteroidPoints Small  = 100
 
 applyTurn :: Ship -> Float -> Ship
 applyTurn s dt = case turnDir s of

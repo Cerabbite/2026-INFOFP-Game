@@ -12,7 +12,7 @@ drawMenu :: Picture
 drawMenu = color white $ Pictures [translate (-100) 50  $ scale 0.3 0.3 $ text "ASTEROIDS", translate (-180) (-25)  $ scale 0.15 0.15 $ text "Press ENTER / SPACE to start playing"]
 
 drawGame :: GameState -> Picture
-drawGame gstate = color white $ Pictures $ [ drawShip (ship gstate) ] ++ map drawBullet (bullets gstate) ++ map drawAsteroid (asteroids gstate)  ++ [drawLives (lives gstate)] ++ [drawScore(lives gstate)]
+drawGame gstate = color white $ Pictures $ [ drawShip (ship gstate) ] ++ map drawBullet (bullets gstate) ++ map drawAsteroid (asteroids gstate)  ++ [drawLives (lives gstate)] ++ [drawScore (score gstate)]
 
 shipShape :: Picture
 shipShape = lineLoop [ (-10, -10), (0, 15), (10, -10) ]

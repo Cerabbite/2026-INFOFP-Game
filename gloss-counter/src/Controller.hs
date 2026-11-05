@@ -89,6 +89,8 @@ resolveCollisions gs =
 
       newExplosions = [ Explosion (astPos a) 1 0.5 | a <- shot ]
 
+      earnedScore = sum [ asteroidPoints (astSize a) | a <- shot ]
+
       s = ship gs
       shipDies = invulnTime s <= 0 && any (shipHitsAsteroid s) intact
       livesLeft 
@@ -106,6 +108,7 @@ resolveCollisions gs =
         , ship       = newShip
         , lives      = livesLeft
         , rng        = rng'
+        , score      = score gs + earnedScore
         , screen     = if shipDies && livesLeft <= 0 then GameOver else screen gs }
         
 killShip :: Bool -> GameState -> GameState
