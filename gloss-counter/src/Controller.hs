@@ -90,8 +90,31 @@ resolveCollisions gs =
 
       s = ship gs
       shipDies = invulnTime s <= 0 && any (shipHitsAsteroid s) intact
+      livesLeft 
+        |shipDies  = lives gs - 1
+        |otherwise = lives gs
+
+      newShip
+        |shipDies  = s { invulnTime = respawnInvuln }
+        |otherwise = s
+      deathExplosion = [ Explosion (shipPos s) 1 0.5 | shipDies ]
+
   in gs { bullets    = spentBullets ++ otherBullets
         , asteroids  = intact ++ fragments
-        , explosions = newExplosions ++ explosions gs
+        , explosions = deathExplosion ++ newExplosions ++ explosions gs
+        , ship       = newShip
+        , lives      = livesLeft
         , rng        = rng'
-        , screen     = if shipDies then GameOver else screen gs }
+        , screen     = if shipDies && livesLeft <= 0 then GameOver else screen gs }
+        
+killShip :: Bool -> GameState -> GameState
+killShip False gs = gs
+killShip True  gs
+  | livesLeft <= 0 = hit { screen = GameOver }
+  | otherwise      = hit
+  where
+    livesLeft = lives gs - 1
+    s         = ship gs
+    hit = gs { lives      = livesLeft
+             , ship       = s { invulnTime = respawnInvuln }
+             , explosions = Explosion (shipPos s) 1 0.5 : explosions gs }

@@ -14,6 +14,12 @@ import System.Random (StdGen, randomR)
 screenRadius :: Float
 screenRadius = 300 
 
+startingLives :: Int
+startingLives = 3
+
+respawnInvuln :: Float
+respawnInvuln = 3
+
 turnSpeed :: Float
 turnSpeed = 180.0
 
@@ -79,13 +85,14 @@ initialShip = Ship
   , isThrusting = False
   , turnDir = NoTurn
   , shootCooldown = 0
-  , invulnTime = 0
+  , invulnTime = 3
   }
 
 data GameState = GameState {
                   screen  :: Screen
                  , elapsedTime :: Float
                  , ship :: Ship
+                 , lives :: Int
                  , bullets :: [Bullet]
                  , asteroids   :: [Asteroid]
                  , explosions  :: [Explosion]
@@ -97,6 +104,7 @@ initialState initialRng =
   let (asts, newRng) = generateAsteroids 5 initialRng
   in GameState 
        { screen      = Menu 
+       , lives       = startingLives
        , elapsedTime = 0 
        , ship        = initialShip 
        , bullets     = []
