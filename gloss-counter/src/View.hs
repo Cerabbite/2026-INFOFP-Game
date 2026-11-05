@@ -9,16 +9,35 @@ view :: GameState -> IO Picture
 view = return . viewPure
 
 drawMenu :: Picture
-drawMenu = color white $ Pictures [translate (-100) 50  $ scale 0.3 0.3 $ text "ASTEROIDS", translate (-180) (-25)  $ scale 0.15 0.15 $ text "Press ENTER / SPACE to Start Playing"]
+drawMenu = color white $ Pictures [translate (-100) 50  $ scale 0.3 0.3 $ text "ASTEROIDS", translate (-180) (-25)  $ scale 0.15 0.15 $ text "Press ENTER / SPACE to start playing"]
 
 drawGame :: GameState -> Picture
-drawGame gstate = color white $ Pictures $ [ drawShip (ship gstate) ] ++ map drawBullet (bullets gstate) ++ map drawAsteroid (asteroids gstate)
+drawGame gstate = color white $ Pictures $ [ drawShip (ship gstate) ] ++ map drawBullet (bullets gstate) ++ map drawAsteroid (asteroids gstate)  ++ [drawLives (lives gstate)] ++ [drawScore(lives gstate)]
+
+shipShape :: Picture
+shipShape = lineLoop [ (-10, -10), (0, 15), (10, -10) ]
+
+drawLives :: Int -> Picture
+drawLives n = Pictures
+  [ translate (-270 + fromIntegral i * 25) 270 $ scale 0.8 0.8 $ color red shipShape
+  | i <- [0 .. n - 1] ]
+
+drawScore n =
+  let toStringVar = show n
+      size        = 0.2
+      wdth        = fromIntegral (length toStringVar) * 50 * size
+      letterwdth  = 5 * 50 * 0.1
+  in Pictures
+       [ translate (-letterwdth / 2) 275 $ scale 0.1 0.1 $ color white $ text "SCORE"
+       , translate (-wdth / 2)  240 $ scale size size $ color white $ text toStringVar ]
 
 drawShip :: Ship -> Picture
-drawShip s = 
-  let (x, y) = shipPos s
-      shipShape = lineLoop [ (-10, -10), (0, 15), (10, -10) ]
-  in translate x y $ rotate (heading s) $ color red shipShape
+drawShip s
+  | invulnTime s > 0 && not visible = blank
+  | otherwise = translate x y $ rotate (heading s) $ color red shipShape
+  where
+    (x, y)  = shipPos s
+    visible = even (floor (invulnTime s * 10) :: Int)
 
 drawBullet :: Bullet -> Picture
 drawBullet b =
@@ -35,10 +54,10 @@ drawAsteroid ast =
   in translate x y $ color white $ circle radius
 
 drawPaused :: Picture
-drawPaused = color white $ Pictures [translate (-100) 50  $ scale 0.3 0.3 $ text "PAUSED", translate (-180) (-25)  $ scale 0.15 0.15 $ text "Press `P` to Resume Playing", translate (-180) (-75)  $ scale 0.15 0.15 $ text "Press `B` to Go To Main Menu"]
+drawPaused = color white $ Pictures [translate (-100) 50  $ scale 0.3 0.3 $ text "PAUSED", translate (-180) (-25)  $ scale 0.15 0.15 $ text "Press `P` to resume playing", translate (-180) (-75)  $ scale 0.15 0.15 $ text "Press `B` to Go To Main Menu"]
 
 drawGameOver :: Picture
-drawGameOver = color red $ Pictures [translate (-100) 50  $ scale 0.3 0.3 $ text "GAME OVER"]
+drawGameOver = color red $ Pictures [translate (-100) 50  $ scale 0.3 0.3 $ text "GAME OVER",  translate (-180) (-25)  $ scale 0.15 0.15 $ text "Press ENTER / SPACE to restart"]
 
 viewPure :: GameState -> Picture
 viewPure gstate = case screen gstate of
