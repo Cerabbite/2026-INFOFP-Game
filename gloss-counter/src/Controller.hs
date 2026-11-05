@@ -26,8 +26,9 @@ inputPure (EventKey (SpecialKey KeyEnter) Down _ _) gstate = case screen gstate 
   Menu -> gstate { screen = Playing }
   _       -> gstate
 inputPure (EventKey (SpecialKey KeySpace) Down _ _) gstate = case screen gstate of
-  Menu -> gstate { screen = Playing }
-  Playing -> gstate { bullets = fireBullet (ship gstate) : bullets gstate }
+  Menu     -> gstate { screen = Playing }
+  Playing  -> gstate { bullets = fireBullet (ship gstate) : bullets gstate }
+  GameOver -> gstate { screen = Playing }
   _       -> gstate
 inputPure (EventKey (Char 'p') Down _ _) gstate = case screen gstate of
   Playing -> gstate { screen = Paused }
