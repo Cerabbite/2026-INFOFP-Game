@@ -55,7 +55,9 @@ isRightKey (Char 'd') = True
 isRightKey _ = False
 
 inputPure :: Event -> GameState -> GameState
-
+inputPure (EventKey (Char 'h') Down _ _) gstate = case screen gstate of
+  Menu -> gstate { screen = HighScores }
+  _       -> gstate
 inputPure (EventKey (SpecialKey KeyEnter) Down _ _) gstate = case screen gstate of
   Menu -> gstate { screen = Playing }
   GameOver -> resetGame gstate Playing

@@ -9,7 +9,7 @@ view :: GameState -> IO Picture
 view = return . viewPure
 
 drawMenu :: Picture
-drawMenu = color white $ Pictures [translate (-100) 50  $ scale 0.3 0.3 $ text "ASTEROIDS", translate (-180) (-25)  $ scale 0.15 0.15 $ text "Press ENTER / SPACE to start playing"]
+drawMenu = color white $ Pictures [translate (-100) 50  $ scale 0.3 0.3 $ text "ASTEROIDS", translate (-180) (-25)  $ scale 0.15 0.15 $ text "Press ENTER / SPACE to start playing",translate (-160) (-50)  $ scale 0.15 0.15 $ text "Press `H` to see your HighScores" ]
 
 drawGame :: GameState -> Picture
 drawGame gstate = color white $ Pictures $
@@ -85,7 +85,6 @@ drawHighScores gstate =
         (\i hs -> translate (-250) (200 - fromIntegral i * 30) $ scale 0.15 0.15 $ text (formatEntry i hs)) 
         [1..] 
         scores
-        
       title = translate (-270) 250 $ scale 0.3 0.3 $ text "HIGHSCORES"
       
   in color white $ Pictures (title : renderedScores)
