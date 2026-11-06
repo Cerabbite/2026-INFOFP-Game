@@ -115,8 +115,8 @@ step dt gstate = do
   let nextState = stepPure dt gstate
   if screen gstate == Playing && screen nextState == GameOver
     then do
-      saveHighScore (score nextState)
-      return nextState
+      newScores <- saveHighScore (score nextState)
+      return nextState { highScores = newScores }
     else return nextState
 
 resolveCollisions :: GameState -> GameState

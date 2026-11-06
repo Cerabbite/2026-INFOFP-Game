@@ -71,7 +71,7 @@ drawGameOver :: GameState -> Picture
 drawGameOver gstate = 
   let currentScore = score gstate
       hs = if null (highScores gstate) 
-             then 999 
+             then currentScore 
              else max currentScore (maximum (map hsScore (highScores gstate)))
   in color red $ Pictures 
        [ translate (-125) 50   $ scale 0.3 0.3   $ text "GAME OVER"
