@@ -4,6 +4,28 @@ import Model
 import Graphics.Gloss
 import Graphics.Gloss.Interface.IO.Game
 import Data.List (partition)
+import Data.Aeson (encode, decode)
+import qualified Data.ByteString.Lazy as BSL
+import Data.Time.Clock.POSIX (getPOSIXTime)
+import Control.Exception (catch, IOException)
+
+highScoreFile :: FilePath
+highScoreFile = "highscores.json"
+
+handleFileError :: IOException -> IO BSL.ByteString
+handleFileError _ = return BSL.empty
+
+saveHighScore :: Int -> IO ()
+saveHighScore currentScore = do
+  posixTime <- getPOSIXTime
+  let now = round posixTime
+  let newEntry = HighScore { hsTimestamp = now, hsScore = currentScore }
+  existingBytes <- catch (BSL.readFile highScoreFile) handleFileError
+  let existingScores = case decode existingBytes of
+                         Just xs -> xs
+                         Nothing -> []
+      updatedScores = newEntry : (existingScores :: [HighScore])
+  BSL.writeFile highScoreFile (encode updatedScores)
 
 isThrustKey :: Key -> Bool
 isThrustKey (SpecialKey KeyUp) = True
@@ -71,7 +93,13 @@ stepPure dt gstate = case screen gstate of
   _ -> gstate
 
 step :: Float -> GameState -> IO GameState
-step dt gstate = return (stepPure dt gstate)
+step dt gstate = do
+  let nextState = stepPure dt gstate
+  if screen gstate == Playing && screen nextState == GameOver
+    then do
+      saveHighScore (score nextState)
+      return nextState
+    else return nextState
 
 resolveCollisions :: GameState -> GameState
 resolveCollisions gs =
