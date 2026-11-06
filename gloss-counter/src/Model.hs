@@ -143,6 +143,8 @@ initialState initialRng loadedScores =
        , score       = initialScore
        , spawnTimer  = spawnInterval
        , highScores  = loadedScores
+       , ufos        = []
+       , ufoTimer    = ufoSpawnInterval
        }
 
 resetGame :: GameState -> GameState
