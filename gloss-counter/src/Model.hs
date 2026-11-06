@@ -101,6 +101,7 @@ data GameState = GameState {
                  , explosions  :: [Explosion]
                  , rng         :: StdGen
                  , score       :: Int
+                 , spawnTimer :: Float
                  } deriving(Show)
 
 initialState :: StdGen -> GameState
@@ -116,6 +117,7 @@ initialState initialRng =
        , explosions  = []
        , rng         = newRng
        , score       = initialScore
+       , spawnTimer  = spawnInterval
        }
 
 asteroidPoints :: AsteroidSize -> Int
@@ -250,3 +252,45 @@ splitAsteroid g a = case smaller (astSize a) of
         v@(vx, vy) = (cos ang * spd, sin ang * spd)
         mk vel = a { astSize = sz, astVel = vel }
     in ([mk v, mk (-vx, -vy)], g2)
+
+--Makes asteroids move from the start instead of standstil
+randomAsteroid :: StdGen -> (Asteroid, StdGen)
+randomAsteroid g =
+  let (x,   g1) = randomR (-250, 250) g
+      (y,   g2) = randomR (-250, 250) g1
+      (ang, g3) = randomR (0, 2 * pi) g2
+      (spd, g4) = randomR (20, 60) g3
+  in ( Asteroid { astPos  = (x, y)
+                , astVel  = (cos ang * spd, sin ang * spd)
+                , astSize = Large }
+     , g4 )
+
+generateAsteroids :: Int -> StdGen -> ([Asteroid], StdGen)
+generateAsteroids 0 gen = ([], gen)
+generateAsteroids n gen =
+  let (ast,  gen1) = randomAsteroid gen
+      (rest, gen2) = generateAsteroids (n - 1) gen1
+  in (ast : rest, gen2)
+
+spawnInterval :: Float
+spawnInterval = 5      -- seconds between spawns
+
+maxAsteroids :: Int
+maxAsteroids = 8
+
+randomEdgeAsteroid :: StdGen -> (Asteroid, StdGen)
+randomEdgeAsteroid g =
+  let (side, g1) = randomR (0 :: Int, 3) g
+      (t,    g2) = randomR (-screenRadius, screenRadius) g1
+      (ang,  g3) = randomR (0, 2 * pi) g2
+      (spd,  g4) = randomR (20, 60) g3
+      pos = case side of
+              0 -> (-screenRadius, t)
+              1 -> ( screenRadius, t)
+              2 -> (t, -screenRadius)
+              _ -> (t,  screenRadius)
+  in ( Asteroid { astPos  = pos
+                , astVel  = (cos ang * spd, sin ang * spd)
+                , astSize = Large }
+     , g4 )
+
