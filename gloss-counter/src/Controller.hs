@@ -5,6 +5,7 @@ import Graphics.Gloss
 import Graphics.Gloss.Interface.IO.Game
 import Data.List (partition)
 import Data.Aeson (encode, decode)
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 import Data.Time.Clock.POSIX (getPOSIXTime)
 import Control.Exception (catch, IOException)
@@ -12,15 +13,16 @@ import Control.Exception (catch, IOException)
 highScoreFile :: FilePath
 highScoreFile = "highscores.json"
 
-handleFileError :: IOException -> IO BSL.ByteString
-handleFileError _ = return BSL.empty
+handleFileError :: IOException -> IO BS.ByteString
+handleFileError _ = return BS.empty
 
 saveHighScore :: Int -> IO ()
 saveHighScore currentScore = do
   posixTime <- getPOSIXTime
   let now = round posixTime
   let newEntry = HighScore { hsTimestamp = now, hsScore = currentScore }
-  existingBytes <- catch (BSL.readFile highScoreFile) handleFileError
+  strictBytes <- catch (BS.readFile highScoreFile) handleFileError
+  let existingBytes = BSL.fromStrict strictBytes
   let existingScores = case decode existingBytes of
                          Just xs -> xs
                          Nothing -> []
