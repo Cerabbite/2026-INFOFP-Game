@@ -44,7 +44,7 @@ initialScore :: Int
 initialScore = 0
 
 ufoSpeed, ufoShootInterval, ufoSpawnInterval :: Float
-ufoSpeed         = 60     --maximum
+ufoSpeed         = 40     --maximum
 ufoShootInterval = 2
 ufoSpawnInterval = 15
 
@@ -300,7 +300,7 @@ randomAsteroid g =
   let (x,   g1) = randomR (-250, 250) g
       (y,   g2) = randomR (-250, 250) g1
       (ang, g3) = randomR (0, 2 * pi) g2
-      (spd, g4) = randomR (20, 60) g3
+      (spd, g4) = randomR (60, 120) g3
   in ( Asteroid { astPos  = (x, y)
                 , astVel  = (cos ang * spd, sin ang * spd)
                 , astSize = Large }
@@ -311,7 +311,7 @@ spawnInterval :: Float
 spawnInterval = 5      -- seconds between spawns
 
 maxAsteroids :: Int
-maxAsteroids = 8 --maximum asteroids at start
+maxAsteroids = 10 --maximum asteroids at start
 
 randomEdgeAsteroid :: StdGen -> (Asteroid, StdGen)
 randomEdgeAsteroid g =
@@ -343,14 +343,12 @@ ufoAI player u =
       (px, py) = shipPos player
       dx       = wrapDelta (px - ux)           -- shortest way, also across the screen edge
       dy       = wrapDelta (py - uy)
-      hx       = sin (heading u * pi / 180)    -- the direction the UFO's nose points
+      hx       = sin (heading u * pi / 180)    -- the direction the UFO nose points
       hy       = cos (heading u * pi / 180)
       side     = hx * dy - hy * dx             -- < 0: player is clockwise of the nose
       ahead    = hx * dx + hy * dy             -- > 0: player is in front of the nose
-      aimed    = ahead > 0 && abs side < 0.1 * sqrt (dx * dx + dy * dy)   -- within ~6 degrees
       (vx, vy) = shipVel u
-      turn | aimed     = NoTurn                -- dead zone, so the nose doesn't jitter
-           | side < 0  = TurnLeft              -- in your Model TurnLeft = heading goes up
+      turn | side < 0  = TurnLeft              
            | otherwise = TurnRight
   in u { turnDir = turn, isThrusting = vx * vx + vy * vy < ufoSpeed * ufoSpeed }
 
