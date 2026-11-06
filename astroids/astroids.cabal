@@ -1,13 +1,13 @@
-name:                gloss-counter
-version:             0.1.0.0
-author:              Alejandro Serrano
-maintainer:          A.SerranoMena@uu.nl
+name:                astroids
+version:             1.0.0.0
+author:              Masheed Waizy (0384739), Kevin Giesberts (7254970).
+maintainer:          m.waizy@students.uu.nl k.giesberts@students.uu.nl
 category:            Game
 build-type:          Simple
 cabal-version:       >=1.10
 
 
-executable gloss-counter
+executable astriods
   main-is:             Main.hs
   build-depends:       base >= 4 && < 5,
                        gloss,

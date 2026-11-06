@@ -135,7 +135,7 @@ step dt gstate = do
       return nextState { highScores = newScores }
     else return nextState
 
--- | Detects and resolves collisions between bullets, asteroids, and the player's ship
+-- | Detects and resolves collisions between bullets, asteroids and the players ship
 resolveCollisions :: GameState -> GameState
 resolveCollisions gs =
   let playerBullets = [ b | b <- bullets gs, bulletOwner b == PlayerBullet ]
@@ -164,3 +164,84 @@ resolveCollisions gs =
         |shipDies  = s { invulnTime = respawnInvuln }
         |otherwise = s
       deathExplosion = [ Explosion (shipPos s) 1 0.5 | shipDies ]
+      
+      newScreen
+        | shipDies && livesLeft <= 0 = GameOver 
+        | otherwise                  = screen gs
+
+  in gs { bullets    = spentBullets ++ otherBullets
+        , asteroids  = intact ++ fragments
+        , explosions = deathExplosion ++ newExplosions ++ explosions gs
+        , ship       = newShip
+        , lives      = livesLeft
+        , rng        = rng'
+        , score      = score gs + earnedScore
+        , screen     = newScreen}
+
+-- | Reduces player lives and updates game state when the players ship is destroyed
+killShip :: Bool -> GameState -> GameState
+killShip False gs = gs
+killShip True  gs
+  | livesLeft <= 0 = hit { screen = GameOver }
+  | otherwise      = hit
+  where
+    livesLeft = lives gs - 1
+    s         = ship gs
+    hit = gs { lives      = livesLeft
+             , ship       = s { invulnTime = respawnInvuln }
+             , explosions = Explosion (shipPos s) 1 0.5 : explosions gs }
+
+-- | Periodically spawns new asteroids along the screen edges up to maximum allowed capacity
+spawnStep :: Float -> GameState -> GameState
+spawnStep dt gs
+  | t > 0                                 = gs { spawnTimer = t }
+  | length (asteroids gs) >= maxAsteroids = gs { spawnTimer = spawnInterval }
+  | otherwise =
+      let (a, g') = randomEdgeAsteroid (rng gs)
+      in gs { asteroids = a : asteroids gs
+            , rng        = g'
+            , spawnTimer = spawnInterval }
+  where t = spawnTimer gs - dt
+
+-- | Resolves interactions between UFOs, player bullets, enemy bullets and the players ship
+resolveUFOs :: GameState -> GameState
+resolveUFOs gs =
+  killShip hurt gs
+       { ufos       = alive
+       , bullets    = [ b | b <- mine,   not (any (collidesWith b) (ufos gs)) ]
+                   ++ [ b | b <- theirs, not (shotAtMe b) ]
+       , score      = score gs + ufoPoints * length (filter shotDown dead)
+       , explosions = [ Explosion (shipPos u) 1 0.5 | u <- dead ] ++ explosions gs
+       }
+  where
+      s              = ship gs
+      vulnerable     = invulnTime s <= 0
+      (mine, theirs) = partition ((== PlayerBullet) . bulletOwner) (bullets gs)
+
+      shotDown u = any (`collidesWith` u) mine
+      shotAtMe b = vulnerable && collidesWith b s
+
+      (dead, alive) = partition shotDown (ufos gs)
+      hurt          = any shotAtMe theirs
+
+-- | Periodically spawns UFO enemies based on timer intervals and max limits
+ufoSpawnStep :: Float -> GameState -> GameState
+ufoSpawnStep dt gs
+  | t > 0                       = gs { ufoTimer = t }
+  | length (ufos gs) >= maxUFOs = gs { ufoTimer = ufoSpawnInterval }
+  | otherwise =
+      let (u, g') = spawnUFO (rng gs)
+      in gs { ufos = u : ufos gs, rng = g', ufoTimer = ufoSpawnInterval }
+  where t = ufoTimer gs - dt
+
+-- | Serializes current GameState to json
+saveGame :: GameState -> IO ()
+saveGame gs = BSL.writeFile "savegame.json" (encode gs)
+
+-- | Deserializes GameState from json or returns unchanged state on error
+loadGame :: GameState -> IO GameState
+loadGame gs = do
+  bytes <- catch (BS.readFile "savegame.json") handleFileError
+  case decode (BSL.fromStrict bytes) of
+    Just saved -> return saved
+    Nothing    -> return gs
