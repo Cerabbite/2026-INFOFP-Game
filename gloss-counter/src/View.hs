@@ -12,7 +12,12 @@ drawMenu :: Picture
 drawMenu = color white $ Pictures [translate (-100) 50  $ scale 0.3 0.3 $ text "ASTEROIDS", translate (-180) (-25)  $ scale 0.15 0.15 $ text "Press ENTER / SPACE to start playing"]
 
 drawGame :: GameState -> Picture
-drawGame gstate = color white $ Pictures $ [ drawShip (ship gstate) ] ++ map drawBullet (bullets gstate) ++ map drawAsteroid (asteroids gstate)  ++ [drawLives (lives gstate)] ++ [drawScore (score gstate)]
+drawGame gstate = color white $ Pictures $
+     [ drawShip red (ship gstate) ]
+  ++ map drawBullet (bullets gstate)
+  ++ map drawAsteroid (asteroids gstate)
+  ++ map (drawShip green) (ufos gstate)
+  ++ [ drawLives (lives gstate), drawScore (score gstate) ]
 
 shipShape :: Picture
 shipShape = lineLoop [ (-10, -10), (0, 15), (10, -10) ]
@@ -31,18 +36,20 @@ drawScore n =
        [ translate (-letterwdth / 2) 275 $ scale 0.1 0.1 $ color white $ text "SCORE"
        , translate (-wdth / 2)  240 $ scale size size $ color white $ text toStringVar ]
 
-drawShip :: Ship -> Picture
-drawShip s
+drawShip :: Color -> Ship -> Picture
+drawShip c s
   | invulnTime s > 0 && not visible = blank
-  | otherwise = translate x y $ rotate (heading s) $ color red shipShape
+  | otherwise = translate x y $ rotate (heading s) $ color c shipShape
   where
     (x, y)  = shipPos s
     visible = even (floor (invulnTime s * 10) :: Int)
 
 drawBullet :: Bullet -> Picture
-drawBullet b =
-  let (x,y) = bulletPos b
-  in translate x y $ color yellow $ circleSolid 2.5
+drawBullet b = 
+  let (x, y) = bulletPos b
+  in case bulletOwner b of
+       UFOBullet    -> translate x y $ color blue $ circleSolid 2.5
+       PlayerBullet -> translate x y $ color yellow $ circleSolid 2.5
 
 drawAsteroid :: Asteroid -> Picture
 drawAsteroid ast =

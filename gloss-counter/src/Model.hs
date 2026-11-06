@@ -40,6 +40,15 @@ bulletLifetime = 2.0
 initialScore :: Int
 initialScore = 0
 
+ufoSpeed, ufoShootInterval, ufoSpawnInterval :: Float
+ufoSpeed         = 60     --maximum
+ufoShootInterval = 2
+ufoSpawnInterval = 15
+
+maxUFOs, ufoPoints :: Int
+maxUFOs   = 2
+ufoPoints = 333
+
 data Screen = Menu | Playing | Paused | GameOver | HighScores
   deriving(Eq, Show)
 
@@ -104,6 +113,8 @@ data GameState = GameState {
                  , rng         :: StdGen
                  , score       :: Int
                  , spawnTimer :: Float
+                 , ufos :: [Ship]
+                 , ufoTimer :: Float
                  } deriving(Show)
 
 initialState :: StdGen -> GameState
@@ -120,10 +131,12 @@ initialState initialRng =
        , rng         = newRng
        , score       = initialScore
        , spawnTimer  = spawnInterval
+       , ufos        = []
+       ,ufoTimer     = ufoSpawnInterval
        }
 
 asteroidPoints :: AsteroidSize -> Int
-asteroidPoints Large  = 20
+asteroidPoints Large  = 25
 asteroidPoints Medium = 50
 asteroidPoints Small  = 100
 
@@ -164,8 +177,8 @@ moveShip s dt =
       newPos   = wrap (x + vx * dt, y + vy * dt)
   in s { shipPos = newPos }
 
-fireBullet :: Ship -> Bullet
-fireBullet s =
+fireBullet :: BulletOwner -> Ship -> Bullet
+fireBullet owner s =
   let (x, y) = shipPos s
       rad    = heading s * (pi / 180.0)
       vx = sin rad * bulletSpeed
@@ -174,9 +187,8 @@ fireBullet s =
        { bulletPos      = (x, y)
        , bulletVel      = (vx, vy)
        , bulletLifeTime = bulletLifetime
-       , bulletOwner    = PlayerBullet
+       , bulletOwner    = owner
        }
-
 moveBullet :: Bullet -> Float -> Bullet
 moveBullet b dt =
   let (x, y)   = bulletPos b
@@ -273,17 +285,58 @@ maxAsteroids = 8 --maximum asteroids at start
 
 randomEdgeAsteroid :: StdGen -> (Asteroid, StdGen)
 randomEdgeAsteroid g =
+  let (pos, g1) = randomEdgePos g
+      (ang, g2) = randomR (0, 2 * pi) g1
+      (spd, g3) = randomR (20, 60) g2
+  in ( Asteroid { astPos  = pos
+                , astVel  = (cos ang * spd, sin ang * spd)
+                , astSize = Large }
+     , g3 )
+
+updateShip :: Float -> Ship -> Ship
+updateShip dt s = moveShip (applyDrag (applyThrust (applyTurn s dt) dt) dt) dt
+
+randomEdgePos :: StdGen -> (Vector, StdGen)
+randomEdgePos g =
   let (side, g1) = randomR (0 :: Int, 3) g
       (t,    g2) = randomR (-screenRadius, screenRadius) g1
-      (ang,  g3) = randomR (0, 2 * pi) g2
-      (spd,  g4) = randomR (20, 60) g3
       pos = case side of
               0 -> (-screenRadius, t)
               1 -> ( screenRadius, t)
               2 -> (t, -screenRadius)
               _ -> (t,  screenRadius)
-  in ( Asteroid { astPos  = pos
-                , astVel  = (cos ang * spd, sin ang * spd)
-                , astSize = Large }
-     , g4 )
+  in (pos, g2)
 
+ufoAI :: Ship -> Ship -> Ship
+ufoAI player u =
+  let (ux, uy) = shipPos u
+      (px, py) = shipPos player
+      dx       = wrapDelta (px - ux)           -- shortest way, also across the screen edge
+      dy       = wrapDelta (py - uy)
+      hx       = sin (heading u * pi / 180)    -- the direction the UFO's nose points
+      hy       = cos (heading u * pi / 180)
+      side     = hx * dy - hy * dx             -- < 0: player is clockwise of the nose
+      ahead    = hx * dx + hy * dy             -- > 0: player is in front of the nose
+      aimed    = ahead > 0 && abs side < 0.1 * sqrt (dx * dx + dy * dy)   -- within ~6 degrees
+      (vx, vy) = shipVel u
+      turn | aimed     = NoTurn                -- dead zone, so the nose doesn't jitter
+           | side < 0  = TurnLeft              -- in your Model TurnLeft = heading goes up
+           | otherwise = TurnRight
+  in u { turnDir = turn, isThrusting = vx * vx + vy * vy < ufoSpeed * ufoSpeed }
+
+stepUFO :: Float -> Ship -> Ship -> (Ship, [Bullet])
+stepUFO dt player u =
+  let u' = updateShip dt (ufoAI player u)
+      cd = shootCooldown u' - dt
+  in if cd <= 0
+       then (u' { shootCooldown = ufoShootInterval }, [fireBullet UFOBullet u'])
+       else (u' { shootCooldown = cd }, [])
+
+spawnUFO :: StdGen -> (Ship, StdGen)
+spawnUFO g =
+  let (pos, g') = randomEdgePos g
+  in (initialShip { shipPos = pos, invulnTime = 0, shootCooldown = ufoShootInterval }, g')
+
+bulletHitsShip :: Bullet -> Ship -> Bool
+bulletHitsShip b s =
+  circlesOverlap (bulletPos b, bulletRadius) (shipPos s, shipRadius)

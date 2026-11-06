@@ -27,7 +27,7 @@ inputPure (EventKey (SpecialKey KeyEnter) Down _ _) gstate = case screen gstate 
   _       -> gstate
 inputPure (EventKey (SpecialKey KeySpace) Down _ _) gstate = case screen gstate of
   Menu     -> gstate { screen = Playing }
-  Playing  -> gstate { bullets = fireBullet (ship gstate) : bullets gstate }
+  Playing  -> gstate { bullets = fireBullet PlayerBullet (ship gstate) : bullets gstate }
   GameOver -> gstate { screen = Playing }
   _       -> gstate
 inputPure (EventKey (Char 'p') Down _ _) gstate = case screen gstate of
@@ -57,17 +57,19 @@ input e gstate = return (inputPure e gstate)
 stepPure :: Float -> GameState -> GameState
 stepPure dt gstate = case screen gstate of
   Playing ->
-    let s0 = moveShip (applyDrag (applyThrust (applyTurn (ship gstate) dt) dt) dt) dt
+    let s0 = updateShip dt (ship gstate)
         updatedShip    = s0 { invulnTime = max 0 (invulnTime s0 - dt) }
         updatedBullets = updateBullets (bullets gstate) dt
+        (movedUFOs, ufoShots) = unzip (map (stepUFO dt updatedShip) (ufos gstate))
         moved = gstate
           { elapsedTime = elapsedTime gstate + dt
           , ship        = updatedShip
-          , bullets     = updatedBullets
+          , bullets     = concat ufoShots ++ updatedBullets
+          , ufos        = movedUFOs
           , asteroids   = map (moveAsteroid dt) (asteroids gstate)
           , explosions  = updateExplosions (explosions gstate) dt
           }
-    in spawnStep dt (resolveCollisions moved)
+    in ufoSpawnStep dt . spawnStep dt . resolveUFOs . resolveCollisions $ moved
   _ -> gstate
 
 step :: Float -> GameState -> IO GameState
@@ -134,3 +136,32 @@ spawnStep dt gs
             , rng        = g'
             , spawnTimer = spawnInterval }
   where t = spawnTimer gs - dt
+
+resolveUFOs :: GameState -> GameState
+resolveUFOs gs =
+  killShip hurt gs
+       { ufos       = alive
+       , bullets    = [ b | b <- mine,   not (any (bulletHitsShip b) (ufos gs)) ]
+                   ++ [ b | b <- theirs, not (shotAtMe b) ]
+       , score      = score gs + ufoPoints * length (filter shotDown dead)
+       , explosions = [ Explosion (shipPos u) 1 0.5 | u <- dead ] ++ explosions gs
+       }
+  where
+      s            = ship gs
+      vulnerable     = invulnTime s <= 0
+      (mine, theirs) = partition ((== PlayerBullet) . bulletOwner) (bullets gs)
+
+      shotDown u = any (`bulletHitsShip` u) mine
+      shotAtMe b = vulnerable && bulletHitsShip b s
+
+      (dead, alive) = partition shotDown (ufos gs)
+      hurt          = any shotAtMe theirs
+
+ufoSpawnStep :: Float -> GameState -> GameState
+ufoSpawnStep dt gs
+  | t > 0                       = gs { ufoTimer = t }
+  | length (ufos gs) >= maxUFOs = gs { ufoTimer = ufoSpawnInterval }
+  | otherwise =
+      let (u, g') = spawnUFO (rng gs)
+      in gs { ufos = u : ufos gs, rng = g', ufoTimer = ufoSpawnInterval }
+  where t = ufoTimer gs - dt
