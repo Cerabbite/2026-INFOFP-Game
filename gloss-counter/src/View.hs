@@ -10,12 +10,15 @@ import Data.Ord (Down(..))
 import Data.Time.Format (formatTime, defaultTimeLocale)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 
+-- | Top level view function converting GameState to IO Picture for Gloss
 view :: GameState -> IO Picture
 view = return . viewPure
 
+-- | Renders the initial main menu screen with title and navigation controls
 drawMenu :: Picture
 drawMenu = color white $ Pictures [translate (-100) 50  $ scale 0.3 0.3 $ text "ASTEROIDS", translate (-180) (-25)  $ scale 0.15 0.15 $ text "Press ENTER / SPACE to start playing",translate (-160) (-50)  $ scale 0.15 0.15 $ text "Press `H` to see your HighScores" ]
 
+-- | Renders the active gameplay screen and everything that must be drawn for the game including ships, projectiles, asteroids, explosions, lives, and score
 drawGame :: GameState -> Picture
 drawGame gstate = color white $ Pictures $
      [ drawShip red (ship gstate) ]
@@ -25,14 +28,17 @@ drawGame gstate = color white $ Pictures $
   ++ map (drawShip green) (ufos gstate)
   ++ [ drawLives (lives gstate), drawScore (score gstate) ]
 
+-- | Standard triangular polygon shape representing the player's ship
 shipShape :: Picture
 shipShape = lineLoop [ (-10, -10), (0, 15), (10, -10) ]
 
+-- | Renders the remaining lives as small red ship icons aligned at the top-left of the screen
 drawLives :: Int -> Picture
 drawLives n = Pictures
   [ translate (-270 + fromIntegral i * 25) 270 $ scale 0.8 0.8 $ color red shipShape
   | i <- [0 .. n - 1] ]
 
+-- | Renders the player's current score centered at the top of the screen
 drawScore :: Int -> Picture
 drawScore n =
   let toStringVar = show n
@@ -43,6 +49,7 @@ drawScore n =
        [ translate (-letterwdth / 2) 275 $ scale 0.1 0.1 $ color white $ text "SCORE"
        , translate (-wdth / 2)  240 $ scale size size $ color white $ text toStringVar ]
 
+-- | Renders a ship (player or UFO) given a color, applying position, rotation, and a blinking visual effects when invulnerable
 drawShip :: Color -> Ship -> Picture
 drawShip c s
   | invulnTime s > 0 && not visible = blank
@@ -51,10 +58,11 @@ drawShip c s
     (x, y)  = shipPos s
     visible = even (floor (invulnTime s * 10) :: Int)
 
---Class to draw ship and bullet
+-- | Type class for game entities that can be converted directly into a Gloss Picture
 class Renderable a where
   render :: a -> Picture
 
+-- | Renders bullets with colours differentiated by ownership (player vs UFO)
 instance Renderable Bullet where
   render b =
     let (x, y) = getPos b
@@ -63,11 +71,13 @@ instance Renderable Bullet where
               PlayerBullet -> yellow
     in translate x y $ color c $ circleSolid (getRadius b)
 
+-- | Renders asteroids as white outlined circles according to their collision radius
 instance Renderable Asteroid where
   render ast =
     let (x, y) = getPos ast
     in translate x y $ color white $ circle (getRadius ast)
 
+-- | Renders explosion animations as expanding orange circles
 instance Renderable Explosion where
   render explosion =
     let (x, y) = expPos explosion
@@ -75,6 +85,7 @@ instance Renderable Explosion where
         r      = (explosionTimer - expTimeLeft explosion) * 40 * expScale explosion
     in translate x y $ color orange $ circle r
 
+-- | Renders the pause menu overlay with option instructions.
 drawPaused :: Picture
 drawPaused = color white $ Pictures [
   translate (-100) 50  $ scale 0.3 0.3 $ text "PAUSED",
@@ -83,6 +94,7 @@ drawPaused = color white $ Pictures [
   translate (-180) (-100) $ scale 0.15 0.15 $ text "Press `S` to save game", 
   translate (-180) (-125) $ scale 0.15 0.15 $ text "Press `L` to load saved game"]
 
+-- | Renders the Game Over screen highlighting final score and the players highscore
 drawGameOver :: GameState -> Picture
 drawGameOver gstate = 
   let currentScore = score gstate
@@ -97,6 +109,8 @@ drawGameOver gstate =
        , translate (-210) (-100) $ scale 0.15 0.15 $ text "Press ESCAPE / BACKSPACE to return home"
        ]
 
+-- | Renders the High Scores leaderboard screen with formatted timestamps sorted from highest to lowest scores in the form
+-- | 1. SCORE TIME
 drawHighScores :: GameState -> Picture
 drawHighScores gstate = 
   let sortedScores = sortOn (Down . hsScore) (highScores gstate)
@@ -111,6 +125,7 @@ drawHighScores gstate =
       
   in color white $ Pictures (title : ret : renderedScores)
 
+-- | Dlegates rendering to the apropriate screen drawer based on current screen mode
 viewPure :: GameState -> Picture
 viewPure gstate = case screen gstate of
   Menu     -> drawMenu
