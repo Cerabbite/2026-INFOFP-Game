@@ -117,8 +117,8 @@ data GameState = GameState {
                  , highScores :: [HighScore]
                  } deriving(Show)
 
-initialState :: StdGen -> GameState
-initialState initialRng = 
+initialState :: StdGen -> [HighScore] -> GameState
+initialState initialRng loadedScores = 
   let (asts, newRng) = generateAsteroids 5 initialRng
   in GameState 
        { screen      = Menu 
@@ -131,7 +131,23 @@ initialState initialRng =
        , rng         = newRng
        , score       = initialScore
        , spawnTimer  = spawnInterval
-       , highScores = []
+       , highScores  = loadedScores
+       }
+
+resetGame :: GameState -> GameState
+resetGame gs = 
+  let (asts, newRng) = generateAsteroids 5 (rng gs)
+  in gs 
+       { screen      = Playing
+       , lives       = startingLives
+       , elapsedTime = 0 
+       , ship        = initialShip 
+       , bullets     = []
+       , asteroids   = asts
+       , explosions  = []
+       , rng         = newRng
+       , score       = initialScore
+       , spawnTimer  = spawnInterval
        }
 
 asteroidPoints :: AsteroidSize -> Int

@@ -16,18 +16,22 @@ highScoreFile = "highscores.json"
 handleFileError :: IOException -> IO BS.ByteString
 handleFileError _ = return BS.empty
 
-saveHighScore :: Int -> IO ()
+saveHighScore :: Int -> IO [HighScore]
 saveHighScore currentScore = do
   posixTime <- getPOSIXTime
-  let now = round posixTime
-  let newEntry = HighScore { hsTimestamp = now, hsScore = currentScore }
+  let newEntry = HighScore { hsTimestamp = round posixTime, hsScore = currentScore }
+  existingScores <- loadHighScores
+  let updatedScores = newEntry : existingScores
+  BSL.writeFile highScoreFile (encode updatedScores)
+  return updatedScores
+
+loadHighScores :: IO [HighScore]
+loadHighScores = do
   strictBytes <- catch (BS.readFile highScoreFile) handleFileError
   let existingBytes = BSL.fromStrict strictBytes
-  let existingScores = case decode existingBytes of
-                         Just xs -> xs
-                         Nothing -> []
-      updatedScores = newEntry : (existingScores :: [HighScore])
-  BSL.writeFile highScoreFile (encode updatedScores)
+  return $ case decode existingBytes of
+             Just xs -> xs
+             Nothing -> []
 
 isThrustKey :: Key -> Bool
 isThrustKey (SpecialKey KeyUp) = True
@@ -48,11 +52,12 @@ inputPure :: Event -> GameState -> GameState
 
 inputPure (EventKey (SpecialKey KeyEnter) Down _ _) gstate = case screen gstate of
   Menu -> gstate { screen = Playing }
+  GameOver -> resetGame gstate
   _       -> gstate
 inputPure (EventKey (SpecialKey KeySpace) Down _ _) gstate = case screen gstate of
   Menu     -> gstate { screen = Playing }
   Playing  -> gstate { bullets = fireBullet (ship gstate) : bullets gstate }
-  GameOver -> gstate { screen = Playing }
+  GameOver -> resetGame gstate
   _       -> gstate
 inputPure (EventKey (Char 'p') Down _ _) gstate = case screen gstate of
   Playing -> gstate { screen = Paused }
