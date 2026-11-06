@@ -4,6 +4,34 @@ import Model
 import Graphics.Gloss
 import Graphics.Gloss.Interface.IO.Game
 import Data.List (partition)
+import Data.Aeson (encode, decode)
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as BSL
+import Data.Time.Clock.POSIX (getPOSIXTime)
+import Control.Exception (catch, IOException)
+
+highScoreFile :: FilePath
+highScoreFile = "highscores.json"
+
+handleFileError :: IOException -> IO BS.ByteString
+handleFileError _ = return BS.empty
+
+saveHighScore :: Int -> IO [HighScore]
+saveHighScore currentScore = do
+  posixTime <- getPOSIXTime
+  let newEntry = HighScore { hsTimestamp = round posixTime, hsScore = currentScore }
+  existingScores <- loadHighScores
+  let updatedScores = newEntry : existingScores
+  BSL.writeFile highScoreFile (encode updatedScores)
+  return updatedScores
+
+loadHighScores :: IO [HighScore]
+loadHighScores = do
+  strictBytes <- catch (BS.readFile highScoreFile) handleFileError
+  let existingBytes = BSL.fromStrict strictBytes
+  return $ case decode existingBytes of
+             Just xs -> xs
+             Nothing -> []
 
 isThrustKey :: Key -> Bool
 isThrustKey (SpecialKey KeyUp) = True
@@ -24,11 +52,14 @@ inputPure :: Event -> GameState -> GameState
 
 inputPure (EventKey (SpecialKey KeyEnter) Down _ _) gstate = case screen gstate of
   Menu -> gstate { screen = Playing }
+  GameOver -> resetGame gstate
   _       -> gstate
 inputPure (EventKey (SpecialKey KeySpace) Down _ _) gstate = case screen gstate of
   Menu     -> gstate { screen = Playing }
   Playing  -> gstate { bullets = fireBullet PlayerBullet (ship gstate) : bullets gstate }
   GameOver -> gstate { screen = Playing }
+  Playing  -> gstate { bullets = fireBullet (ship gstate) : bullets gstate }
+  GameOver -> resetGame gstate
   _       -> gstate
 inputPure (EventKey (Char 'p') Down _ _) gstate = case screen gstate of
   Playing -> gstate { screen = Paused }
@@ -73,7 +104,13 @@ stepPure dt gstate = case screen gstate of
   _ -> gstate
 
 step :: Float -> GameState -> IO GameState
-step dt gstate = return (stepPure dt gstate)
+step dt gstate = do
+  let nextState = stepPure dt gstate
+  if screen gstate == Playing && screen nextState == GameOver
+    then do
+      saveHighScore (score nextState)
+      return nextState
+    else return nextState
 
 resolveCollisions :: GameState -> GameState
 resolveCollisions gs =

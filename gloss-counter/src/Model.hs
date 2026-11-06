@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 -- | This module contains the data types
 --   which represent the state of the game
 module Model where
@@ -6,12 +7,14 @@ module Model where
 -- [x] Make astroids move from start
 -- [x] Score counting
 -- [ ] High score page
--- [ ] Store scores to computer
+-- [WIP] Store scores to computer
 -- [WIP] Add space ships
 -- [] optional requirments
 -- [] design document aanpassen in overleaf
 
 import System.Random (StdGen, randomR)
+import GHC.Generics (Generic)
+import Data.Aeson (ToJSON, FromJSON)
 
 screenRadius :: Float
 screenRadius = 300 
@@ -55,6 +58,13 @@ data Screen = Menu | Playing | Paused | GameOver | HighScores
 type Vector = ( Float , Float )
 data TurnDir = TurnLeft | TurnRight | NoTurn
   deriving ( Eq , Show )
+
+data HighScore = HighScore
+  { hsTimestamp :: Integer
+  , hsScore     :: Int
+  } deriving (Show, Generic)
+instance ToJSON HighScore
+instance FromJSON HighScore
 
 data Ship = Ship
   { shipPos :: Vector
@@ -113,15 +123,33 @@ data GameState = GameState {
                  , rng         :: StdGen
                  , score       :: Int
                  , spawnTimer :: Float
+                 , highScores :: [HighScore]
                  , ufos :: [Ship]
                  , ufoTimer :: Float
                  } deriving(Show)
 
-initialState :: StdGen -> GameState
-initialState initialRng = 
+initialState :: StdGen -> [HighScore] -> GameState
+initialState initialRng loadedScores = 
   let (asts, newRng) = generateAsteroids 5 initialRng
   in GameState 
        { screen      = Menu 
+       , lives       = startingLives
+       , elapsedTime = 0 
+       , ship        = initialShip 
+       , bullets     = []
+       , asteroids   = asts
+       , explosions  = []
+       , rng         = newRng
+       , score       = initialScore
+       , spawnTimer  = spawnInterval
+       , highScores  = loadedScores
+       }
+
+resetGame :: GameState -> GameState
+resetGame gs = 
+  let (asts, newRng) = generateAsteroids 5 (rng gs)
+  in gs 
+       { screen      = Playing
        , lives       = startingLives
        , elapsedTime = 0 
        , ship        = initialShip 

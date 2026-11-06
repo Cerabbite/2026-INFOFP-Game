@@ -63,13 +63,23 @@ drawAsteroid ast =
 drawPaused :: Picture
 drawPaused = color white $ Pictures [translate (-100) 50  $ scale 0.3 0.3 $ text "PAUSED", translate (-180) (-25)  $ scale 0.15 0.15 $ text "Press `P` to resume playing", translate (-180) (-75)  $ scale 0.15 0.15 $ text "Press `B` to Go To Main Menu"]
 
-drawGameOver :: Picture
-drawGameOver = color red $ Pictures [translate (-100) 50  $ scale 0.3 0.3 $ text "GAME OVER",  translate (-180) (-25)  $ scale 0.15 0.15 $ text "Press ENTER / SPACE to restart"]
+drawGameOver :: GameState -> Picture
+drawGameOver gstate = 
+  let currentScore = score gstate
+      hs = if null (highScores gstate) 
+             then 999 
+             else max currentScore (maximum (map hsScore (highScores gstate)))
+  in color red $ Pictures 
+       [ translate (-125) 50   $ scale 0.3 0.3   $ text "GAME OVER"
+       , translate (-80)  0    $ scale 0.15 0.15 $ text ("SCORE: " ++ show currentScore)
+       , translate (-100) (-30) $ scale 0.15 0.15 $ text ("HIGH SCORE: " ++ show hs)
+       , translate (-180) (-80) $ scale 0.15 0.15 $ text "Press ENTER / SPACE to restart"
+       ]
 
 viewPure :: GameState -> Picture
 viewPure gstate = case screen gstate of
   Menu     -> drawMenu
   Playing  -> drawGame gstate
   Paused   -> drawPaused
-  GameOver -> drawGameOver
+  GameOver -> drawGameOver gstate
   _ -> blank
