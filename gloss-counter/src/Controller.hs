@@ -33,6 +33,12 @@ loadHighScores = do
              Just xs -> xs
              Nothing -> []
 
+isReturnHomeKey :: Key -> Bool
+isReturnHomeKey (Char '\b')        = True
+isReturnHomeKey (Char '\DEL')      = True
+isReturnHomeKey (SpecialKey KeyEsc) = True
+isReturnHomeKey _ = False
+
 isThrustKey :: Key -> Bool
 isThrustKey (SpecialKey KeyUp) = True
 isThrustKey (Char 'w') = True
@@ -52,13 +58,13 @@ inputPure :: Event -> GameState -> GameState
 
 inputPure (EventKey (SpecialKey KeyEnter) Down _ _) gstate = case screen gstate of
   Menu -> gstate { screen = Playing }
-  GameOver -> resetGame gstate
+  GameOver -> resetGame gstate Playing
   _       -> gstate
 inputPure (EventKey (SpecialKey KeySpace) Down _ _) gstate = case screen gstate of
   Menu     -> gstate { screen = Playing }
   Playing  -> gstate { bullets = fireBullet PlayerBullet (ship gstate) : bullets gstate }
-  GameOver -> resetGame gstate
-  _        -> gstate
+  GameOver -> resetGame gstate Playing
+  _       -> gstate
 inputPure (EventKey (Char 'p') Down _ _) gstate = case screen gstate of
   Playing -> gstate { screen = Paused }
   Paused  -> gstate { screen = Playing }
@@ -71,6 +77,7 @@ inputPure (EventKey k Down _ _) gstate
   | isThrustKey k = let s = ship gstate in gstate { ship = s { isThrusting = True } }
   | isLeftKey k   = let s = ship gstate in gstate { ship = s { turnDir = TurnRight } }
   | isRightKey k  = let s = ship gstate in gstate { ship = s { turnDir = TurnLeft } }
+  | isReturnHomeKey k = resetGame gstate Menu
 
 inputPure (EventKey k Up _ _) gstate
   | isThrustKey k = let s = ship gstate in gstate { ship = s { isThrusting = False } }

@@ -1,1 +1,5 @@
+<<<<<<< HEAD
 [{"hsScore":2883,"hsTimestamp":1793972847},{"hsScore":3480,"hsTimestamp":1793972256},{"hsScore":340,"hsTimestamp":1793972213},{"hsScore":1100,"hsTimestamp":1793971727},{"hsScore":1120,"hsTimestamp":1793971690},{"hsScore":930,"hsTimestamp":1793971651},{"hsScore":2370,"hsTimestamp":1793971519},{"hsScore":2370,"hsTimestamp":1793971493},{"hsScore":680,"hsTimestamp":1793971220},{"hsScore":680,"hsTimestamp":1793971214},{"hsScore":1690,"hsTimestamp":1793970586}]
+=======
+[{"hsScore":0,"hsTimestamp":1793973085},{"hsScore":1150,"hsTimestamp":1793972796},{"hsScore":0,"hsTimestamp":1793972680},{"hsScore":3480,"hsTimestamp":1793972256},{"hsScore":340,"hsTimestamp":1793972213},{"hsScore":1100,"hsTimestamp":1793971727},{"hsScore":1120,"hsTimestamp":1793971690},{"hsScore":930,"hsTimestamp":1793971651},{"hsScore":2370,"hsTimestamp":1793971519},{"hsScore":2370,"hsTimestamp":1793971493},{"hsScore":680,"hsTimestamp":1793971220},{"hsScore":680,"hsTimestamp":1793971214},{"hsScore":1690,"hsTimestamp":1793970586}]
+>>>>>>> 8146c7b (Esc/Backspace returns to Menu)

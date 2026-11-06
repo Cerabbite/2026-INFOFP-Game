@@ -74,7 +74,21 @@ drawGameOver gstate =
        , translate (-80)  0    $ scale 0.15 0.15 $ text ("SCORE: " ++ show currentScore)
        , translate (-100) (-30) $ scale 0.15 0.15 $ text ("HIGH SCORE: " ++ show hs)
        , translate (-180) (-80) $ scale 0.15 0.15 $ text "Press ENTER / SPACE to restart"
+       , translate (-210) (-100) $ scale 0.15 0.15 $ text "Press ESCAPE / BACKSPACE to return home"
        ]
+
+drawHighScores :: GameState -> Picture
+drawHighScores gstate = 
+  let scores = highScores gstate
+      formatEntry idx hs = show idx ++ ". " ++ show (hsScore hs) ++ " - " ++ show (hsTimestamp hs)  
+      renderedScores = zipWith 
+        (\i hs -> translate (-250) (200 - fromIntegral i * 30) $ scale 0.15 0.15 $ text (formatEntry i hs)) 
+        [1..] 
+        scores
+        
+      title = translate (-270) 250 $ scale 0.3 0.3 $ text "HIGHSCORES"
+      
+  in color white $ Pictures (title : renderedScores)
 
 viewPure :: GameState -> Picture
 viewPure gstate = case screen gstate of
@@ -82,4 +96,4 @@ viewPure gstate = case screen gstate of
   Playing  -> drawGame gstate
   Paused   -> drawPaused
   GameOver -> drawGameOver gstate
-  _ -> blank
+  HighScores -> drawHighScores gstate
