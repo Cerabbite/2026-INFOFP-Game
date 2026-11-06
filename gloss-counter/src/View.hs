@@ -4,6 +4,7 @@ module View where
 
 import Graphics.Gloss
 import Model
+import Constants
 import Data.List (sortOn)
 import Data.Ord (Down(..))
 import Data.Time.Format (formatTime, defaultTimeLocale)
@@ -75,7 +76,12 @@ instance Renderable Explosion where
     in translate x y $ color orange $ circle r
 
 drawPaused :: Picture
-drawPaused = color white $ Pictures [translate (-100) 50  $ scale 0.3 0.3 $ text "PAUSED", translate (-180) (-25)  $ scale 0.15 0.15 $ text "Press `P` to resume playing", translate (-180) (-75)  $ scale 0.15 0.15 $ text "Press `B` to Go To Main Menu"]
+drawPaused = color white $ Pictures [
+  translate (-100) 50  $ scale 0.3 0.3 $ text "PAUSED",
+  translate (-180) (-25)  $ scale 0.15 0.15 $ text "Press `P` to resume playing",
+  translate (-180) (-75)  $ scale 0.15 0.15 $ text "Press `B` to Go To Main Menu", 
+  translate (-180) (-100) $ scale 0.15 0.15 $ text "Press `S` to save game", 
+  translate (-180) (-125) $ scale 0.15 0.15 $ text "Press `L` to load saved game"]
 
 drawGameOver :: GameState -> Picture
 drawGameOver gstate = 

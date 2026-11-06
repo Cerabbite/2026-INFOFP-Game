@@ -1,64 +1,29 @@
 {-# LANGUAGE DeriveGeneric #-}
--- | This module contains the data types
---   which represent the state of the game
+
 module Model where
 
--- TODO
--- [x] Make astroids move from start
--- [x] Score counting
--- [x] High score page
--- [WIP] Store scores to computer
--- [x] Add space ships
--- [WIP] optional requirments
--- [] design document aanpassen in overleaf
-
-import System.Random (StdGen, randomR)
+import System.Random (StdGen, randomR, random, mkStdGen)
 import GHC.Generics (Generic)
-import Data.Aeson (ToJSON, FromJSON)
+import Data.Aeson (ToJSON(..), FromJSON(..))
+import Constants
 
---Constants:
-screenRadius :: Float
-screenRadius = 300 
+instance ToJSON StdGen where
+  toJSON g = toJSON (fst (random g :: (Int, StdGen)))
 
-startingLives :: Int
-startingLives = 3
+instance FromJSON StdGen where
+  parseJSON v = fmap mkStdGen (parseJSON v)
 
-respawnInvuln :: Float
-respawnInvuln = 3
-
-turnSpeed :: Float
-turnSpeed = 180.0
-
-thrustAccel :: Float
-thrustAccel = 250.0
-
-dragCoeff :: Float
-dragCoeff = 0.98
-
-bulletSpeed :: Float
-bulletSpeed = 400.0
-
-bulletLifetime :: Float
-bulletLifetime = 2.0
-
-initialScore :: Int
-initialScore = 0
-
-ufoSpeed, ufoShootInterval, ufoSpawnInterval :: Float
-ufoSpeed         = 40     --maximum
-ufoShootInterval = 2
-ufoSpawnInterval = 15
-
-maxUFOs, ufoPoints :: Int
-maxUFOs   = 2
-ufoPoints = 333
+type Vector = (Float , Float)
 
 data Screen = Menu | Playing | Paused | GameOver | HighScores
-  deriving(Eq, Show)
+  deriving (Eq, Show, Generic)
+instance ToJSON Screen
+instance FromJSON Screen
 
-type Vector = ( Float , Float )
 data TurnDir = TurnLeft | TurnRight | NoTurn
-  deriving ( Eq , Show )
+  deriving (Eq, Show, Generic)
+instance ToJSON TurnDir
+instance FromJSON TurnDir
 
 data HighScore = HighScore
   { hsTimestamp :: Integer
@@ -75,32 +40,44 @@ data Ship = Ship
   , turnDir :: TurnDir
   , shootCooldown :: Float
   , invulnTime :: Float
-  } deriving ( Show )
+  } deriving (Show, Generic)
+instance ToJSON Ship
+instance FromJSON Ship
 
-data BulletOwner = PlayerBullet | UFOBullet
-  deriving ( Eq , Show )
+data BulletOwner = PlayerBullet | UFOBullet 
+  deriving (Eq, Show, Generic)
+instance ToJSON BulletOwner
+instance FromJSON BulletOwner
 
 data Bullet = Bullet
   { bulletPos :: Vector
   , bulletVel :: Vector
   , bulletLifeTime :: Float
   , bulletOwner :: BulletOwner
-  } deriving ( Show )
+  } deriving (Show, Generic)
+instance ToJSON Bullet
+instance FromJSON Bullet
 
-data AsteroidSize = Large | Medium | Small
-  deriving ( Eq , Show )
+data AsteroidSize = Large | Medium | Small 
+  deriving (Eq, Show, Generic)
+instance ToJSON AsteroidSize
+instance FromJSON AsteroidSize
 
 data Asteroid = Asteroid
   { astPos :: Vector
   , astVel :: Vector
   , astSize :: AsteroidSize
-  } deriving ( Show )
+  } deriving (Show, Generic)
+instance ToJSON Asteroid
+instance FromJSON Asteroid
 
 data Explosion = Explosion
   { expPos :: Vector
   , expScale :: Float
   , expTimeLeft :: Float
-  } deriving ( Show )
+  } deriving (Show, Generic)
+instance ToJSON Explosion
+instance FromJSON Explosion
 
 initialShip :: Ship
 initialShip = Ship
@@ -127,7 +104,9 @@ data GameState = GameState {
                  , highScores :: [HighScore]
                  , ufos :: [Ship]
                  , ufoTimer :: Float
-                 } deriving(Show)
+                 } deriving(Show, Generic)
+instance ToJSON GameState
+instance FromJSON GameState
 
 initialState :: StdGen -> [HighScore] -> GameState
 initialState initialRng loadedScores = 
@@ -228,6 +207,7 @@ generateAsteroids n gen =
   let (ast, gen1)      = randomAsteroid gen
       (rest, finalGen) = generateAsteroids (n - 1) gen1
   in (ast : rest, finalGen)
+
 updateExplosions :: [Explosion] -> Float -> [Explosion]
 updateExplosions exps dt =
   [ e { expTimeLeft = expTimeLeft e - dt } | e <- exps, expTimeLeft e - dt > 0 ]
@@ -245,7 +225,6 @@ explosionTimer :: Float
 explosionTimer = 0.5
 
 --Typeclasses and instances start here:
-
 -- Entities that occupy space and can collide.
 class Collidable a where
   getPos    :: a -> Vector
@@ -388,9 +367,9 @@ stepUFO :: Float -> Ship -> Ship -> (Ship, [Bullet])
 stepUFO dt player u =
   let u' = updateShip dt (ufoAI player u)
       cd = shootCooldown u' - dt
-  in if cd <= 0
-       then (u' { shootCooldown = ufoShootInterval }, [fireBullet UFOBullet u'])
-       else (u' { shootCooldown = cd }, [])
+  in case () of
+       _ | cd <= 0   -> (u' { shootCooldown = ufoShootInterval }, [fireBullet UFOBullet u'])
+         | otherwise -> (u' { shootCooldown = cd }, [])
 
 spawnUFO :: StdGen -> (Ship, StdGen)
 spawnUFO g =

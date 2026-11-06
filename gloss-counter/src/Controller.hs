@@ -1,6 +1,7 @@
 module Controller where
 
 import Model
+import Constants
 import Graphics.Gloss
 import Graphics.Gloss.Interface.IO.Game
 import Data.List (partition)
@@ -90,7 +91,9 @@ inputPure (EventKey k Up _ _) gstate
 inputPure _ gstate = gstate
 
 input :: Event -> GameState -> IO GameState
-input e gstate = return (inputPure e gstate)
+input (EventKey (Char 's') Down _ _) gs = saveGame gs >> return gs
+input (EventKey (Char 'l') Down _ _) gs = loadGame gs
+input e gs = return (inputPure e gs)
 
 stepPure :: Float -> GameState -> GameState
 stepPure dt gstate = case screen gstate of
@@ -147,6 +150,10 @@ resolveCollisions gs =
         |shipDies  = s { invulnTime = respawnInvuln }
         |otherwise = s
       deathExplosion = [ Explosion (shipPos s) 1 0.5 | shipDies ]
+      
+      newScreen
+        | shipDies && livesLeft <= 0 = GameOver 
+        | otherwise                  = screen gs
 
   in gs { bullets    = spentBullets ++ otherBullets
         , asteroids  = intact ++ fragments
@@ -155,7 +162,7 @@ resolveCollisions gs =
         , lives      = livesLeft
         , rng        = rng'
         , score      = score gs + earnedScore
-        , screen     = if shipDies && livesLeft <= 0 then GameOver else screen gs }
+        , screen     = newScreen}
         
 killShip :: Bool -> GameState -> GameState
 killShip False gs = gs
@@ -209,3 +216,13 @@ ufoSpawnStep dt gs
       let (u, g') = spawnUFO (rng gs)
       in gs { ufos = u : ufos gs, rng = g', ufoTimer = ufoSpawnInterval }
   where t = ufoTimer gs - dt
+
+saveGame :: GameState -> IO ()
+saveGame gs = BSL.writeFile "savegame.json" (encode gs)
+
+loadGame :: GameState -> IO GameState
+loadGame gs = do
+  bytes <- catch (BS.readFile "savegame.json") handleFileError
+  case decode (BSL.fromStrict bytes) of
+    Just saved -> return saved
+    Nothing    -> return gs

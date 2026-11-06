@@ -5,17 +5,20 @@ import System.Random (getStdGen)
 import Controller
 import Model
 import View
-
+import Constants
 import Graphics.Gloss.Interface.IO.Game
+import Graphics.Gloss.Interface.Environment (getScreenSize)
 
 main :: IO ()
-main = do 
+main = do
     gen <- getStdGen
     scores <- loadHighScores
-    playIO (InWindow "Astroids" (600, 600) (200, 200)) -- Or FullScreen
-              black            -- Background color
-              60               -- Frames per second
-              (initialState gen scores)     -- Initial state
-              view             -- View function
-              input            -- Event function
-              step             -- Step function
+    (w, h) <- getScreenSize
+    let k = fromIntegral (min w h) / 600     -- scale 600x600 play area
+    playIO FullScreen
+           black
+           60
+           (initialState gen scores)
+           (fmap (scale k k) . view)
+           input
+           step
