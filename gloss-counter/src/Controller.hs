@@ -67,7 +67,6 @@ stepPure dt gstate = case screen gstate of
           , asteroids   = map (moveAsteroid dt) (asteroids gstate)
           , explosions  = updateExplosions (explosions gstate) dt
           }
-    in resolveCollisions moved
     in spawnStep dt (resolveCollisions moved)
   _ -> gstate
 

@@ -190,12 +190,9 @@ updateBullets bs dt =
 generateAsteroids :: Int -> StdGen -> ([Asteroid], StdGen)
 generateAsteroids 0 gen = ([], gen)
 generateAsteroids n gen =
-  let (x, gen1) = randomR (-250.0, 250.0) gen
-      (y, gen2) = randomR (-250.0, 250.0) gen1
-      ast       = Asteroid { astPos = (x, y), astVel = (0, 0), astSize = Large }
-      (rest, finalGen) = generateAsteroids (n - 1) gen2
+  let (ast, gen1)      = randomAsteroid gen
+      (rest, finalGen) = generateAsteroids (n - 1) gen1
   in (ast : rest, finalGen)
-
 updateExplosions :: [Explosion] -> Float -> [Explosion]
 updateExplosions exps dt =
   [ e { expTimeLeft = expTimeLeft e - dt } | e <- exps, expTimeLeft e - dt > 0 ]
@@ -265,18 +262,12 @@ randomAsteroid g =
                 , astSize = Large }
      , g4 )
 
-generateAsteroids :: Int -> StdGen -> ([Asteroid], StdGen)
-generateAsteroids 0 gen = ([], gen)
-generateAsteroids n gen =
-  let (ast,  gen1) = randomAsteroid gen
-      (rest, gen2) = generateAsteroids (n - 1) gen1
-  in (ast : rest, gen2)
 
 spawnInterval :: Float
 spawnInterval = 5      -- seconds between spawns
 
 maxAsteroids :: Int
-maxAsteroids = 8
+maxAsteroids = 8 --maximum asteroids at start
 
 randomEdgeAsteroid :: StdGen -> (Asteroid, StdGen)
 randomEdgeAsteroid g =
