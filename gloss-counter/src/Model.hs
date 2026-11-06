@@ -241,6 +241,9 @@ shipRadius, bulletRadius :: Float
 shipRadius   = 10
 bulletRadius = 2.5
 
+explosionTimer :: Float
+explosionTimer = 0.5
+
 --Typeclasses and instances start here:
 
 -- Entities that occupy space and can collide.

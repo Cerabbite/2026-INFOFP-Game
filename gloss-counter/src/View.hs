@@ -18,8 +18,9 @@ drawMenu = color white $ Pictures [translate (-100) 50  $ scale 0.3 0.3 $ text "
 drawGame :: GameState -> Picture
 drawGame gstate = color white $ Pictures $
      [ drawShip red (ship gstate) ]
-  ++ map drawBullet (bullets gstate)
-  ++ map drawAsteroid (asteroids gstate)
+  ++ map render (bullets gstate)
+  ++ map render (asteroids gstate)
+  ++ map render (explosions gstate)
   ++ map (drawShip green) (ufos gstate)
   ++ [ drawLives (lives gstate), drawScore (score gstate) ]
 
@@ -31,6 +32,7 @@ drawLives n = Pictures
   [ translate (-270 + fromIntegral i * 25) 270 $ scale 0.8 0.8 $ color red shipShape
   | i <- [0 .. n - 1] ]
 
+drawScore :: Int -> Picture
 drawScore n =
   let toStringVar = show n
       size        = 0.2
@@ -48,21 +50,29 @@ drawShip c s
     (x, y)  = shipPos s
     visible = even (floor (invulnTime s * 10) :: Int)
 
-drawBullet :: Bullet -> Picture
-drawBullet b = 
-  let (x, y) = bulletPos b
-  in case bulletOwner b of
-       UFOBullet    -> translate x y $ color blue $ circleSolid 2.5
-       PlayerBullet -> translate x y $ color yellow $ circleSolid 2.5
+--Class to draw ship and bullet
+class Renderable a where
+  render :: a -> Picture
 
-drawAsteroid :: Asteroid -> Picture
-drawAsteroid ast =
-  let (x, y) = astPos ast
-      radius = case astSize ast of
-                 Large  -> 30.0
-                 Medium -> 20.0
-                 Small  -> 10.0
-  in translate x y $ color white $ circle radius
+instance Renderable Bullet where
+  render b =
+    let (x, y) = getPos b
+        c = case bulletOwner b of
+              UFOBullet    -> blue
+              PlayerBullet -> yellow
+    in translate x y $ color c $ circleSolid (getRadius b)
+
+instance Renderable Asteroid where
+  render ast =
+    let (x, y) = getPos ast
+    in translate x y $ color white $ circle (getRadius ast)
+
+instance Renderable Explosion where
+  render explosion =
+    let (x, y) = expPos explosion
+        -- Expand the circle as expTimeLeft counts down to 0
+        r      = (explosionTimer - expTimeLeft explosion) * 40 * expScale explosion
+    in translate x y $ color orange $ circle r
 
 drawPaused :: Picture
 drawPaused = color white $ Pictures [translate (-100) 50  $ scale 0.3 0.3 $ text "PAUSED", translate (-180) (-25)  $ scale 0.15 0.15 $ text "Press `P` to resume playing", translate (-180) (-75)  $ scale 0.15 0.15 $ text "Press `B` to Go To Main Menu"]
