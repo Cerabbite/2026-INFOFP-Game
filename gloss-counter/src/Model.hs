@@ -147,11 +147,11 @@ initialState initialRng loadedScores =
        , ufoTimer    = ufoSpawnInterval
        }
 
-resetGame :: GameState -> GameState
-resetGame gs = 
+resetGame :: GameState -> Screen -> GameState
+resetGame gs screen = 
   let (asts, newRng) = generateAsteroids 5 (rng gs)
   in gs 
-       { screen      = Playing
+       { screen      = screen
        , lives       = startingLives
        , elapsedTime = 0 
        , ship        = initialShip 
