@@ -68,6 +68,7 @@ stepPure dt gstate = case screen gstate of
           , explosions  = updateExplosions (explosions gstate) dt
           }
     in resolveCollisions moved
+    in spawnStep dt (resolveCollisions moved)
   _ -> gstate
 
 step :: Float -> GameState -> IO GameState
@@ -122,3 +123,15 @@ killShip True  gs
     hit = gs { lives      = livesLeft
              , ship       = s { invulnTime = respawnInvuln }
              , explosions = Explosion (shipPos s) 1 0.5 : explosions gs }
+
+--Asteroid spawner controller
+spawnStep :: Float -> GameState -> GameState
+spawnStep dt gs
+  | t > 0                                 = gs { spawnTimer = t }
+  | length (asteroids gs) >= maxAsteroids = gs { spawnTimer = spawnInterval }
+  | otherwise =
+      let (a, g') = randomEdgeAsteroid (rng gs)
+      in gs { asteroids = a : asteroids gs
+            , rng        = g'
+            , spawnTimer = spawnInterval }
+  where t = spawnTimer gs - dt

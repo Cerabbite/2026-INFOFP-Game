@@ -3,11 +3,11 @@
 module Model where
 
 -- TODO
--- [ ] Make astroids move from start
--- [ ] Score counting
+-- [x] Make astroids move from start
+-- [x] Score counting
 -- [ ] High score page
 -- [ ] Store scores to computer
--- [ ] Add space ships
+-- [WIP] Add space ships
 
 import System.Random (StdGen, randomR)
 
