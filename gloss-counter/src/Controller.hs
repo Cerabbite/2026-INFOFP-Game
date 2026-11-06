@@ -55,7 +55,9 @@ isRightKey (Char 'd') = True
 isRightKey _ = False
 
 inputPure :: Event -> GameState -> GameState
-
+inputPure (EventKey (Char 'h') Down _ _) gstate = case screen gstate of
+  Menu -> gstate { screen = HighScores }
+  _       -> gstate
 inputPure (EventKey (SpecialKey KeyEnter) Down _ _) gstate = case screen gstate of
   Menu -> gstate { screen = Playing }
   GameOver -> resetGame gstate Playing
@@ -113,8 +115,8 @@ step dt gstate = do
   let nextState = stepPure dt gstate
   if screen gstate == Playing && screen nextState == GameOver
     then do
-      saveHighScore (score nextState)
-      return nextState
+      newScores <- saveHighScore (score nextState)
+      return nextState { highScores = newScores }
     else return nextState
 
 resolveCollisions :: GameState -> GameState
