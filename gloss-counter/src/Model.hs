@@ -8,8 +8,8 @@ module Model where
 -- [ ] High score page
 -- [ ] Store scores to computer
 -- [WIP] Add space ships
--- [optional requirments]
--- [design document aanpassen in overleaf]
+-- [] optional requirments
+-- [] design document aanpassen in overleaf
 
 import System.Random (StdGen, randomR)
 
