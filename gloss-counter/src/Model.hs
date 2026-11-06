@@ -6,16 +6,17 @@ module Model where
 -- TODO
 -- [x] Make astroids move from start
 -- [x] Score counting
--- [ ] High score page
+-- [x] High score page
 -- [WIP] Store scores to computer
--- [WIP] Add space ships
--- [] optional requirments
+-- [x] Add space ships
+-- [WIP] optional requirments
 -- [] design document aanpassen in overleaf
 
 import System.Random (StdGen, randomR)
 import GHC.Generics (Generic)
 import Data.Aeson (ToJSON, FromJSON)
 
+--Constants:
 screenRadius :: Float
 screenRadius = 300 
 
@@ -200,12 +201,6 @@ wrap (x, y) = (wrapCoord x, wrapCoord y)
       | c < -screenRadius = c + (2 * screenRadius)
       | otherwise         = c
 
-moveShip :: Ship -> Float -> Ship
-moveShip s dt =
-  let (x, y)   = shipPos s
-      (vx, vy) = shipVel s
-      newPos   = wrap (x + vx * dt, y + vy * dt)
-  in s { shipPos = newPos }
 
 fireBullet :: BulletOwner -> Ship -> Bullet
 fireBullet owner s =
@@ -219,17 +214,13 @@ fireBullet owner s =
        , bulletLifeTime = bulletLifetime
        , bulletOwner    = owner
        }
-moveBullet :: Bullet -> Float -> Bullet
-moveBullet b dt =
-  let (x, y)   = bulletPos b
-      (vx, vy) = bulletVel b
-      newPos   = wrap (x + vx * dt, y + vy * dt)
-      newLife  = bulletLifeTime b - dt
-  in b { bulletPos = newPos, bulletLifeTime = newLife }
 
 updateBullets :: [Bullet] -> Float -> [Bullet]
 updateBullets bs dt =
-  [ moveBullet b dt | b <- bs, bulletLifeTime b - dt > 0 ]
+  [ move dt (b { bulletLifeTime = bulletLifeTime b - dt })
+  | b <- bs
+  , bulletLifeTime b - dt > 0
+  ]
 
 generateAsteroids :: Int -> StdGen -> ([Asteroid], StdGen)
 generateAsteroids 0 gen = ([], gen)
@@ -250,7 +241,57 @@ shipRadius, bulletRadius :: Float
 shipRadius   = 10
 bulletRadius = 2.5
 
--- kortste afstand met wraparound
+--Typeclasses and instances start here:
+
+-- Entities that occupy space and can collide.
+class Collidable a where
+  getPos    :: a -> Vector
+  getRadius :: a -> Float
+
+  --Collsion checker uses overalap of the circles
+  collidesWith :: Collidable b => a -> b -> Bool
+  collidesWith a b = circlesOverlap (getPos a, getRadius a) (getPos b, getRadius b)
+
+--Entities that move
+class Collidable a => Movable a where
+  getVel :: a -> Vector
+  setPos :: Vector -> a -> a
+
+  --Default movement step over the time delta dt.
+  move :: Float -> a -> a
+  move dt obj =
+    let (x, y)   = getPos obj
+        (vx, vy) = getVel obj
+    in setPos (wrap (x + vx * dt, y + vy * dt)) obj
+
+-- Instances ship
+instance Collidable Ship where
+  getPos    = shipPos
+  getRadius = const shipRadius
+
+instance Movable Ship where
+  getVel = shipVel
+  setPos pos s = s { shipPos = pos }
+
+-- Instances bullet
+instance Collidable Bullet where
+  getPos    = bulletPos
+  getRadius = const bulletRadius
+
+instance Movable Bullet where
+  getVel = bulletVel
+  setPos pos b = b { bulletPos = pos }
+
+-- Instances asteroid
+instance Collidable Asteroid where
+  getPos    = astPos
+  getRadius = asteroidRadius . astSize
+
+instance Movable Asteroid where
+  getVel = astVel
+  setPos pos a = a { astPos = pos }
+
+-- ahortest distance wraparound
 wrapDelta :: Float -> Float
 wrapDelta d
   | d >  screenRadius = d - 2 * screenRadius
@@ -264,20 +305,7 @@ circlesOverlap ((x1, y1), r1) ((x2, y2), r2) =
       dy = wrapDelta (y2 - y1)
   in dx * dx + dy * dy <= (r1 + r2) * (r1 + r2)
 
-bulletHitsAsteroid :: Bullet -> Asteroid -> Bool
-bulletHitsAsteroid b a =
-  circlesOverlap (bulletPos b, bulletRadius) (astPos a, asteroidRadius (astSize a))
-
-shipHitsAsteroid :: Ship -> Asteroid -> Bool
-shipHitsAsteroid s a =
-  circlesOverlap (shipPos s, shipRadius) (astPos a, asteroidRadius (astSize a))
-
-moveAsteroid :: Float -> Asteroid -> Asteroid
-moveAsteroid dt a =  
-  let (x, y)   = astPos a
-      (vx, vy) = astVel a
-  in a { astPos = wrap (x + vx * dt, y + vy * dt) }
-
+--asteroid progression
 smaller :: AsteroidSize -> Maybe AsteroidSize
 smaller Large  = Just Medium
 smaller Medium = Just Small
@@ -324,7 +352,7 @@ randomEdgeAsteroid g =
      , g3 )
 
 updateShip :: Float -> Ship -> Ship
-updateShip dt s = moveShip (applyDrag (applyThrust (applyTurn s dt) dt) dt) dt
+updateShip dt s = move dt (applyDrag (applyThrust (applyTurn s dt) dt) dt)
 
 randomEdgePos :: StdGen -> (Vector, StdGen)
 randomEdgePos g =
@@ -337,6 +365,7 @@ randomEdgePos g =
               _ -> (t,  screenRadius)
   in (pos, g2)
 
+--AI of the ufo
 ufoAI :: Ship -> Ship -> Ship
 ufoAI player u =
   let (ux, uy) = shipPos u
@@ -365,6 +394,3 @@ spawnUFO g =
   let (pos, g') = randomEdgePos g
   in (initialShip { shipPos = pos, invulnTime = 0, shootCooldown = ufoShootInterval }, g')
 
-bulletHitsShip :: Bullet -> Ship -> Bool
-bulletHitsShip b s =
-  circlesOverlap (bulletPos b, bulletRadius) (shipPos s, shipRadius)

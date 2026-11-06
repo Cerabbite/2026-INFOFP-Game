@@ -104,7 +104,7 @@ stepPure dt gstate = case screen gstate of
           , ship        = updatedShip
           , bullets     = concat ufoShots ++ updatedBullets
           , ufos        = movedUFOs
-          , asteroids   = map (moveAsteroid dt) (asteroids gstate)
+          , asteroids   = map (move dt) (asteroids gstate)
           , explosions  = updateExplosions (explosions gstate) dt
           }
     in ufoSpawnStep dt . spawnStep dt . resolveUFOs . resolveCollisions $ moved
@@ -125,8 +125,8 @@ resolveCollisions gs =
       otherBullets  = [ b | b <- bullets gs, bulletOwner b /= PlayerBullet ]
 
       -- which asteroids were shot and which bullets hit something
-      (shot, intact) = partition (\a -> any (`bulletHitsAsteroid` a) playerBullets) (asteroids gs)
-      spentBullets   = [ b | b <- playerBullets, not (any (bulletHitsAsteroid b) (asteroids gs)) ]
+      (shot, intact) = partition (\a -> any (`collidesWith` a) playerBullets) (asteroids gs)
+      spentBullets   = [ b | b <- playerBullets, not (any (collidesWith b) (asteroids gs)) ]
 
       -- split shot asteroids, threading random gen
       (fragments, rng') = foldr
@@ -138,7 +138,7 @@ resolveCollisions gs =
       earnedScore = sum [ asteroidPoints (astSize a) | a <- shot ]
 
       s = ship gs
-      shipDies = invulnTime s <= 0 && any (shipHitsAsteroid s) intact
+      shipDies = invulnTime s <= 0 && any (collidesWith s) intact
       livesLeft 
         |shipDies  = lives gs - 1
         |otherwise = lives gs
@@ -185,18 +185,18 @@ resolveUFOs :: GameState -> GameState
 resolveUFOs gs =
   killShip hurt gs
        { ufos       = alive
-       , bullets    = [ b | b <- mine,   not (any (bulletHitsShip b) (ufos gs)) ]
+       , bullets    = [ b | b <- mine,   not (any (collidesWith b) (ufos gs)) ]
                    ++ [ b | b <- theirs, not (shotAtMe b) ]
        , score      = score gs + ufoPoints * length (filter shotDown dead)
        , explosions = [ Explosion (shipPos u) 1 0.5 | u <- dead ] ++ explosions gs
        }
   where
-      s            = ship gs
+      s              = ship gs
       vulnerable     = invulnTime s <= 0
       (mine, theirs) = partition ((== PlayerBullet) . bulletOwner) (bullets gs)
 
-      shotDown u = any (`bulletHitsShip` u) mine
-      shotAtMe b = vulnerable && bulletHitsShip b s
+      shotDown u = any (`collidesWith` u) mine
+      shotAtMe b = vulnerable && collidesWith b s
 
       (dead, alive) = partition shotDown (ufos gs)
       hurt          = any shotAtMe theirs
